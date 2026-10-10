@@ -1,2 +1,2 @@
 # msmcp-site
-Website for msmcp MCP server.
+This repo is the [website](https://msmcp.dev) for the `msmcp` MCP server.
