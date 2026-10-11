@@ -1,0 +1,73 @@
+name: Deploy to GitHub Pages
+
+# Astro's official deployment workflow (https://docs.astro.build/en/guides/deploy/github/),
+# with one addition: a `gate` job that `build` depends on, so a failing check cannot
+# reach Pages. withastro/action installs, builds and uploads in a single step, so
+# there is no seam to insert a check between its build and its upload — a separate
+# job is the only way to keep that guarantee.
+#
+# The site has a build step, so Pages must publish from this workflow
+# (Settings -> Pages -> Source: GitHub Actions). A branch source would publish this
+# repository's Markdown, not the built site.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          # Single source for the Node version, shared with local development.
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # `make all` = astro check, Prettier, the build, then the post-build contract
+      # checks on dist/ (anchor integrity, the thirteen tool names, link hygiene,
+      # referenced assets, template sanity, inline-boundary whitespace).
+      - name: Types, formatting, build and post-build contract checks
+        run: make all
+
+  build:
+    name: Build
+    needs: gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout your repository using git
+        uses: actions/checkout@v7
+      - name: Install, build, and upload your site
+        uses: withastro/action@v6
+
+  deploy:
+    name: Deploy
+    # Pull requests run the gate and the build, and stop here.
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

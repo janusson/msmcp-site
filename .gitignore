@@ -218,3 +218,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ── Node / Astro (this repository builds a static site) ──────────────────────
+node_modules/
+.astro/
+dist/
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*

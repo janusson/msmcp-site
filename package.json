@@ -1,0 +1,24 @@
+{
+  "name": "msmcp-site",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Source for the MSMCP project site - a single-page site describing the MSMCP MCP server for mass spectrometry.",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.2",
+    "astro": "~7.1.0",
+    "tailwindcss": "^4.3.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "prettier": "^3.9.5",
+    "prettier-plugin-astro": "^0.14.1",
+    "typescript": "^6.0.3"
+  }
+}
