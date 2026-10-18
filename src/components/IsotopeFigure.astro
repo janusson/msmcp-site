@@ -3,11 +3,9 @@
  * Isotope pattern figure — the *real* output of
  * `annotate_isotopes(identifier="C6H12O6")` from MSMCP v1.0.0, plotted.
  *
- * The numbers below are transcribed from the tool's own report (see README of
- * the MSMCP repository, section "Example: exact-mass chemistry"), not from a
- * textbook: the monoisotopic mass, the M+1 shift and the normalised abundances
- * all come from the tool.  Editing the data array is all that is needed to
- * re-plot a different compound.
+ * Rechecked against the tool report on 2026-10-18. These are neutral
+ * isotopologue masses in Da, not adduct-adjusted precursor m/z values.
+ * The report rounds masses and abundances to four decimal places.
  */
 const compound = "C6H12O6";
 const monoisotopic = 180.0634;
@@ -17,8 +15,7 @@ const peaks = [
   { label: "M+2", mz: 182.0681, abundance: 0.0147 },
 ];
 
-// Panel A: full-scale.  Panel B: the same cluster on a x100 vertical scale,
-// because an isotope pattern is unreadable at full scale by construction.
+// Panel A uses abundance 0–1. Panel B uses 0–0.08 to resolve minor peaks.
 const axisMin = 179.9;
 const axisMax = 182.5;
 const zoomMax = 0.08;
@@ -29,12 +26,12 @@ const zoomHeight = (a: number) => (a / zoomMax) * 100;
 
 const description =
   `Isotope pattern for ${compound}, computed by annotate_isotopes: ` +
-  `monoisotopic peak ${monoisotopic} m/z at relative abundance 1.0000, ` +
+  `monoisotopic peak ${monoisotopic} Da at relative abundance 1.0000, ` +
   peaks
     .slice(1)
-    .map((p) => `${p.label} at ${p.mz} m/z with relative abundance ${p.abundance.toFixed(4)}`)
+    .map((p) => `${p.label} at ${p.mz} Da with relative abundance ${p.abundance.toFixed(4)}`)
     .join(", ") +
-  ". The lower panel repeats the M+1 and M+2 region on a one-hundred-fold vertical scale.";
+  ". The lower panel shows the M+1 and M+2 region on an abundance scale from 0 to 0.08.";
 ---
 
 <figure class="card p-5">
@@ -67,7 +64,7 @@ const description =
       peaks.map((p) => (
         <span
           class="absolute font-mono whitespace-nowrap"
-          style={`left:${xPercent(p.mz)}%;transform:translateX(-50%);`}
+          style={`left:clamp(2.7rem, ${xPercent(p.mz)}%, calc(100% - 2.7rem));transform:translateX(-50%);`}
         >
           {p.label} · {p.mz.toFixed(4)}
         </span>
@@ -75,14 +72,14 @@ const description =
     }
   </div>
 
-  <div class="mt-5 flex items-baseline justify-between">
+  <div class="mt-5 flex flex-wrap items-baseline justify-between gap-2">
     <span class="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-ink-mute"
-      >Relative abundance, ×100 zoom</span
+      >Minor peaks · scale 0–0.08</span
     >
     <span class="font-mono text-[0.7rem] text-ink-mute">M = 1.0000</span>
   </div>
 
-  <div class="relative mt-2 h-20 border-b border-l border-line">
+  <div class="relative mt-2 h-20 border-b border-l border-line" aria-hidden="true">
     {
       peaks
         .slice(1)
@@ -107,6 +104,7 @@ const description =
 
   <p class="mt-3 text-[0.75rem] leading-relaxed text-ink-mute">
     M+1 and M+2 are shown on a separate scale; on the full-scale panel above they are 6.86 % and
-    1.47 % of the base peak. Values are the tool's output, reproduced without rounding.
+    1.47 % of the base peak. Neutral masses are in Da, not ion m/z. Values are rounded as in the
+    tool report. This approximate M/M+1/M+2 pattern is not a full isotope fine-structure simulation.
   </p>
 </figure>
