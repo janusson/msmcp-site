@@ -4,16 +4,18 @@ Source for the [MSMCP](https://github.com/janusson/MSMCP) project site — a sin
 landing page for the Model Context Protocol server for computational mass
 spectrometry.
 
-MSMCP connects AI workflows to deterministic, auditable tools for inspection, QC,
-search, and hypothesis testing.
+MSMCP puts your own mass spectrometry data in front of an AI client: it is an
+open-source MCP server that lets Claude, Zed or any other MCP host read your
+mzML, MGF and imzML files and work on them with real chemistry — precursor and
+isotope calculations, MS/MS library matching, QC.
 
 The site's job is narrow: inside thirty seconds, a mass spectrometrist or a
 scientific-software developer should understand what MSMCP does, see a real
 workflow, and find a working path to installation. It is one page — not a docs
 portal, not a blog, and not a marketing site.
 
-**Live at:** https://msmcp.dev — deployed from this repository by Cloudflare
-Pages (see [Deployment](#deployment))
+**Live at:** https://msmcp.dev — deployed from this repository to GitHub Pages
+(see [Deployment](#deployment))
 
 ---
 
@@ -55,8 +57,9 @@ things that break silently on a static page making claims about software:
 - exactly one `<h1>`, a `lang`, and a meta description;
 - **every in-page `#anchor` resolves** — a dead nav link is the most likely
   regression on a one-page site;
-- **all thirteen MSMCP tool names still appear**, so a renamed tool cannot drift
-  the page out of sync with the server;
+- **all fourteen MSMCP tool names still appear**, and the tools reference has
+  exactly one `data-tool` row per tool with a call in it, so a renamed or added
+  tool cannot drift the page out of sync with the server;
 - the hero phrasing and the "candidates, not identifications" framing are intact;
 - no `http://` links, `target="_blank"` implies `rel="noopener"`, and no external
   link points outside a small allowlist of trusted hosts;
@@ -89,9 +92,11 @@ change, render the page and look at it.** It was checked in headless Chromium at
 ├── astro.config.mjs          # `site` origin — the single source of the canonical URL
 ├── Makefile                  # deps / dev / build / check / verify / all
 ├── public/
-│   ├── CNAME                 # custom domain for GitHub Pages
-│   └── favicon.svg
-├── scripts/verify-build.mjs  # post-build contract checks
+│   ├── favicon.svg
+│   └── og.png                # 1200x630 link-preview card, from scripts/make-og-card.py
+├── scripts/
+│   ├── make-og-card.py       # regenerates og.png by hand when the headline changes
+│   └── verify-build.mjs      # post-build contract checks
 ├── src/
 │   ├── components/
 │   │   ├── IsotopeFigure.astro   # glucose isotope envelope, from real tool output

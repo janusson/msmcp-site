@@ -18,17 +18,19 @@ const installSnippet = [
   "uv run msmcp             # serves MCP over stdio",
 ].join("\n");
 
-const zedSnippet = [
-  "{",
-  '  "context_servers": {',
-  '    "msmcp": {',
-  '      "command": "uv",',
-  '      "args": ["run", "msmcp"],',
-  '      "env": {}',
-  "    }",
-  "  }",
-  "}",
-].join("\n");
+const zedSnippet = JSON.stringify(
+  {
+    context_servers: {
+      msmcp: {
+        command: "/absolute/path/to/uv",
+        args: ["run", "--directory", "/absolute/path/to/MSMCP", "msmcp"],
+        env: { MSMCP_ALLOWED_ROOT: "/absolute/path/to/ms-data" },
+      },
+    },
+  },
+  null,
+  2,
+);
 
 /* The result of search_library -> check_search_status, from a real run:
    a Bruker maXis LC-MS/MS acquisition (spectrum #966, RT 3.795 min, precursor
@@ -43,16 +45,146 @@ const hits = [
   { rank: 6, id: "EQ362901", name: "Δ⁹-tetrahydrocannabinol", cosine: "0.6827", q: "0.0333" },
 ];
 
-const tools = [
+/* The tool surface, as the server advertises it: fourteen registrations in
+   src/msmcp/tools/*.py, checked against `tools/list` by the project's own
+   contract test.  Every call below is a real signature — the argument names and
+   defaults are the ones a client receives — and the words on the right are what
+   the tool's report actually contains, not a wish list. */
+const toolGuide = [
   {
-    area: "Inspection",
-    names: ["load_mzml_summary", "load_spectrum", "summarise_reference", "release_reference"],
+    id: "inspection",
+    area: "Inspection and references",
+    tools: [
+      {
+        name: "load_mzml_summary",
+        ask: "What is in this file?",
+        call: `load_mzml_summary(file_path="/data/run.mzML", max_spectra=5)`,
+        returns:
+          "Per spectrum: MS level, retention time, total ion current, peak count, base peak. The footer states the file's total spectrum count.",
+      },
+      {
+        name: "list_spectra",
+        ask: "Which spectra are MS2, and which index do I want?",
+        call: `list_spectra(file_path="/data/run.mzML", ms_level=2)`,
+        returns:
+          "An index table — spectrum index, MS level, retention time, precursor m/z, peak count — so the next call names a real spectrum.",
+      },
+      {
+        name: "load_spectrum",
+        ask: "Hold one spectrum server-side.",
+        call: `load_spectrum(file_path="/data/run.mzML", spectrum_index=966)`,
+        returns:
+          "Metadata plus a ptr:spectrum:… handle. The peak array stays in the server's memory instead of entering the conversation.",
+      },
+      {
+        name: "summarise_reference",
+        ask: "What is behind this handle?",
+        call: `summarise_reference(reference="ptr:spectrum:264a5ae9…")`,
+        returns:
+          "The same compact spectrum block, read from memory rather than the file, followed by the reference's provenance.",
+      },
+      {
+        name: "release_reference",
+        ask: "Free that memory now rather than waiting for expiry.",
+        call: `release_reference(reference="ptr:spectrum:264a5ae9…")`,
+        returns:
+          "Confirmation. Releasing an unknown or already-released reference is reported, not raised, so a retry is safe.",
+      },
+    ],
   },
-  { area: "Exact-mass chemistry", names: ["predict_adduct_offset", "annotate_isotopes"] },
-  { area: "Similarity", names: ["validate_precursor", "compute_cosine"] },
-  { area: "Quality control", names: ["generate_qc_summary"] },
-  { area: "Library search", names: ["search_library", "check_search_status", "cancel_search"] },
-  { area: "Diagnostics", names: ["ping"] },
+  {
+    id: "chemistry",
+    area: "Exact-mass chemistry",
+    tools: [
+      {
+        name: "validate_precursor",
+        ask: "Does this precursor mass fit the formula I think it is?",
+        call: `validate_precursor(theoretical_mass=315.2320, experimental_mass=315.2321)`,
+        returns:
+          "Mass error and a PASSED or REJECTED verdict against the named instrument class — 5.0 ppm for the generic class — with the tolerance stated.",
+      },
+      {
+        name: "predict_adduct_offset",
+        ask: "What does [M+H]+ add, exactly?",
+        call: `predict_adduct_offset(adduct_string="[M+H]+")`,
+        returns:
+          "Polarity, charge state, exact mass shift in daltons and the offset formula. One of fourteen canonical adducts; anything else is refused.",
+      },
+      {
+        name: "annotate_isotopes",
+        ask: "What should the isotope envelope look like for this formula?",
+        call: `annotate_isotopes(identifier="C6H12O6", isotopologues=3)`,
+        returns:
+          "Monoisotopic mass and the M, M+1, M+2 masses with relative abundances normalised to M = 1.0000, from the exact multinomial expansion.",
+      },
+    ],
+  },
+  {
+    id: "similarity",
+    area: "Spectral similarity",
+    tools: [
+      {
+        name: "compute_cosine",
+        ask: "How similar are these two MS/MS spectra?",
+        call: `compute_cosine(query_reference="ptr:spectrum:…", reference_peaks=[[mz, intensity], …])`,
+        returns:
+          "A cosine score under the class's m/z window with the matched-peak count, computed by greedy one-to-one peak matching.",
+      },
+    ],
+  },
+  {
+    id: "qc",
+    area: "Quality control",
+    tools: [
+      {
+        name: "generate_qc_summary",
+        ask: "Was this run worth searching?",
+        call: `generate_qc_summary(file_path="/data/run.mzML")`,
+        returns:
+          "Spectrum and total-ion-current counts, peak density, an estimated signal-to-noise ratio and diagnostic-ion prevalence. Reads the whole file, so it is the slow inspection call.",
+      },
+    ],
+  },
+  {
+    id: "search",
+    area: "Library search",
+    tools: [
+      {
+        name: "search_library",
+        ask: "Match this MS2 against the library I already have.",
+        call: `search_library(database_file="/data/libraries/MassBank.msp", spectrum_reference="ptr:spectrum:…", scoring_method="classical")`,
+        returns:
+          "A job ID straight away. The MSP library is read from disk through the same boundary as an acquisition, and the scan runs in the background.",
+      },
+      {
+        name: "check_search_status",
+        ask: "Is the scan finished?",
+        call: `check_search_status(job_id="2aafd7b8…")`,
+        returns:
+          "Running, completed or failed — then the ranked report, naming the scorer, tolerances, library source and provenance.",
+      },
+      {
+        name: "cancel_search",
+        ask: "Stop the scan.",
+        call: `cancel_search(job_id="2aafd7b8…")`,
+        returns:
+          "Cancellation. A job that already finished is reported as finished, and a cancelled scan's partial work is discarded.",
+      },
+    ],
+  },
+  {
+    id: "diagnostics",
+    area: "Diagnostics",
+    tools: [
+      {
+        name: "ping",
+        ask: "Is the server alive, and can it see its dependencies?",
+        call: `ping()`,
+        returns:
+          "Operational status and the MassFlow version it can import. Call it first when another tool fails unexpectedly.",
+      },
+    ],
+  },
 ];
 
 const docs = [
@@ -122,7 +254,7 @@ const docs = [
         </div>
 
         <ul class="mt-8 flex flex-wrap gap-2">
-          <li class="chip">13 tools</li>
+          <li class="chip">14 tools</li>
           <li class="chip">mzML · MGF · imzML</li>
           <li class="chip">stdio, local only</li>
           <li class="chip">no credentials</li>
@@ -338,7 +470,7 @@ const docs = [
         <p class="eyebrow">Also verified in the tree</p>
         <ul class="mt-4 space-y-3 text-[0.88rem] leading-relaxed text-ink-soft">
           <li>
-            <span class="font-mono text-[0.8rem] text-ink">13 tools</span> across inspection, chemistry,
+            <span class="font-mono text-[0.8rem] text-ink">14 tools</span> across inspection, chemistry,
             similarity, quality control and library search — every one asserted by the test suite, and
             the wire schemas checked separately so no parameter reaches a model undocumented.
           </li>
@@ -406,32 +538,65 @@ const docs = [
         <pre class="mono-block mt-3 p-4 text-ink"><code class="text-ink">{zedSnippet}</code></pre>
         <p class="mt-3 text-[0.85rem] leading-relaxed text-ink-soft">
           Shown for Zed's <code>context_servers</code>; any host that can spawn a stdio MCP server
-          configures the same command and arguments.
+          configures the same command and arguments. Replace all three paths: <code>uv</code> itself (<code
+            >command -v uv</code
+          >), your clone, and the directory holding your acquisitions and libraries. <code
+            >MSMCP_ALLOWED_ROOT</code
+          > is the file boundary — without it the server falls back to whichever directory the client
+          happened to start it in.
         </p>
       </div>
     </div>
+  </section>
 
-    <div class="mt-10 card p-5">
-      <h3 class="text-[0.8rem] font-semibold uppercase tracking-[0.14em] text-ink-mute">
-        Thirteen tools, grouped by what they do
-      </h3>
-      <dl class="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2">
-        {
-          tools.map((group) => (
-            <div>
-              <dt class="text-[0.82rem] font-semibold text-head">{group.area}</dt>
-              <dd class="mt-1 font-mono text-[0.78rem] leading-relaxed text-ink-soft">
-                {group.names.join(" · ")}
-              </dd>
-            </div>
-          ))
-        }
-      </dl>
-      <p class="mt-4 text-[0.8rem] text-ink-mute">
-        Only <code>cancel_search</code> and <code>release_reference</code> change server state, and both
-        advertise that on the wire.
-      </p>
+  {
+    /* ===================================================================
+      Tools
+      =================================================================== */
+  }
+  <section id="tools" class="shell scroll-mt-24 pb-16 md:pb-24">
+    <p class="eyebrow">Tools</p>
+    <h2 class="mt-3 max-w-3xl rule-heading">Fourteen tools, one question each.</h2>
+    <p class="mt-4 max-w-3xl leading-relaxed text-ink-soft">
+      Every call below is the signature the server actually advertises, with the argument names and
+      defaults a client receives from <code>tools/list</code>. Tools that take a spectrum you have
+      already loaded take the reference handle, not the peaks.
+    </p>
+
+    <div class="mt-9 space-y-9">
+      {
+        toolGuide.map((group) => (
+          <section aria-labelledby={`tools-${group.id}`}>
+            <h3 id={`tools-${group.id}`} class="text-[0.85rem] font-semibold text-head">
+              {group.area}
+            </h3>
+            <dl class="mt-3">
+              {group.tools.map((tool) => (
+                <div
+                  class="grid gap-1 border-t border-line-soft py-4 sm:grid-cols-[13rem_1fr] sm:gap-6"
+                  data-tool={tool.name}
+                >
+                  <dt class="font-mono text-[0.82rem] font-medium text-head">{tool.name}</dt>
+                  <dd class="min-w-0">
+                    <p class="text-[0.9rem] text-ink">{tool.ask}</p>
+                    <div class="mono-block mt-2 p-3 text-[0.78rem] whitespace-pre-wrap [overflow-wrap:anywhere]">
+                      <code>{tool.call}</code>
+                    </div>
+                    <p class="mt-2 text-[0.82rem] leading-relaxed text-ink-soft">{tool.returns}</p>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        ))
+      }
     </div>
+
+    <p class="mt-7 text-[0.82rem] leading-relaxed text-ink-mute">
+      Only <code>cancel_search</code> and <code>release_reference</code> change server state, and both
+      advertise that on the wire so a host can gate them. Parameter bounds, defaults and validation live
+      in the server's own tool schemas — this list is the map, the README is the reference.
+    </p>
   </section>
 
   {

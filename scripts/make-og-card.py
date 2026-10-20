@@ -24,7 +24,7 @@ SUBLINE = [
     "An open-source MCP server that lets an AI assistant read your own",
     "mzML, MGF and imzML files — and compute on them locally.",
 ]
-CHIPLINE = "13 TOOLS   ·   mzML · MGF · imzML   ·   LOCAL STDIO   ·   MIT"
+CHIPLINE = "14 TOOLS   ·   mzML · MGF · imzML   ·   LOCAL STDIO   ·   MIT"
 EYEBROW = "OPEN-SOURCE MCP SERVER · MASS SPECTROMETRY"
 FOOTER = "github.com/janusson/MSMCP"
 

@@ -16,10 +16,11 @@ import { readFile } from "node:fs/promises";
 
 const DIST = "dist/index.html";
 
-/** The thirteen tools exposed by MSMCP 1.0.0 (src/msmcp/tools/*.py). */
+/** The fourteen tools exposed by MSMCP main (src/msmcp/tools/*.py). */
 const TOOLS = [
   "ping",
   "load_mzml_summary",
+  "list_spectra",
   "load_spectrum",
   "summarise_reference",
   "release_reference",
@@ -70,7 +71,28 @@ check(
 
 // ---- claims about the software --------------------------------------------
 const missingTools = TOOLS.filter((t) => !html.includes(t));
-check("all 13 MSMCP tool names appear", missingTools.length === 0, missingTools.join(", "));
+check(
+  `all ${TOOLS.length} MSMCP tool names appear`,
+  missingTools.length === 0,
+  missingTools.join(", "),
+);
+
+// The tools section is a reference: one row per tool, each carrying a call.
+// A tool added to the server but not to the page fails here instead of shipping
+// a table that quietly stops matching the product.
+const rows = [...html.matchAll(/data-tool="([^"]+)"/g)].map((m) => m[1]);
+check(
+  `tools table has one row per tool (${rows.length} rows)`,
+  rows.length === TOOLS.length && new Set(rows).size === TOOLS.length,
+  `duplicate or missing: ${TOOLS.filter((t) => !rows.includes(t)).join(", ") || "none"}`,
+);
+
+const emptyCalls = [
+  ...html.matchAll(/data-tool="([^"]+)"[\s\S]*?<(?:pre|div)[^>]*><code>([^<]*)<\/code>/g),
+]
+  .filter((m) => !m[2].includes("("))
+  .map((m) => m[1]);
+check("every tool row carries a call", emptyCalls.length === 0, emptyCalls.join(", "));
 
 check(
   "hero headline uses the approved phrasing",
