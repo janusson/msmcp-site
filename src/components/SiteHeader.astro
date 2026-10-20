@@ -4,13 +4,9 @@
 // destination stays reachable with the keyboard and with JS disabled.
 const links = [
   { href: "#example", label: "Example" },
-  { href: "#why", label: "Why MSMCP" },
+  { href: "#limitations", label: "Limitations" },
   { href: "#get-started", label: "Get started" },
-  {
-    href: "https://github.com/janusson/MSMCP#quick-start",
-    label: "Docs",
-    external: true,
-  },
+  { href: "#docs", label: "Docs" },
 ];
 ---
 
@@ -25,26 +21,17 @@ const links = [
 
     {
       links.map((l) => (
-        <a
-          href={l.href}
-          target={l.external ? "_blank" : undefined}
-          rel={l.external ? "noopener" : undefined}
-          class="text-[0.85rem] font-medium text-ink-soft hover:text-accent-ink"
-        >
+        <a href={l.href} class="text-[0.85rem] font-medium text-ink-soft hover:text-accent-ink">
           {l.label}
-          {l.external && <span aria-hidden="true"> ↗</span>}
         </a>
       ))
     }
 
     <a
       href="https://github.com/janusson/MSMCP"
-      target="_blank"
-      rel="noopener"
       class="text-[0.85rem] font-medium text-ink-soft hover:text-accent-ink"
     >
       GitHub<span aria-hidden="true"> ↗</span>
-      <span class="sr-only">(opens in a new tab)</span>
     </a>
   </nav>
 </header>

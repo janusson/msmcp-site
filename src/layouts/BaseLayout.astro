@@ -20,6 +20,7 @@ const ogImage = new URL("/og.png", Astro.site).toString();
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <meta name="author" content="Eric Janusson" />
     <link rel="canonical" href={canonical} />
 
     <meta property="og:type" content="website" />
@@ -37,6 +38,7 @@ const ogImage = new URL("/og.png", Astro.site).toString();
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content="MSMCP — local tools for mass spectrometry" />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
@@ -51,7 +53,7 @@ const ogImage = new URL("/og.png", Astro.site).toString();
   <body class="min-h-screen">
     <a class="skip-link" href="#main">Skip to content</a>
     <SiteHeader />
-    <main id="main">
+    <main id="main" tabindex="-1">
       <slot />
     </main>
     <SiteFooter />
