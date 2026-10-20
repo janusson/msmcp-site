@@ -74,7 +74,12 @@ check("all 13 MSMCP tool names appear", missingTools.length === 0, missingTools.
 
 check(
   "hero headline uses the approved phrasing",
-  html.includes("Ask questions of mass spectrometry data—directly."),
+  html.includes("Ask your AI assistant about your mass spectrometry data."),
+);
+check(
+  "hero answers what the server is for, in plain words",
+  /Claude/.test(html) && /MCP host/.test(html) && /Model Context Protocol/.test(html),
+  "the first screen must name an AI client, not only tool categories",
 );
 check(
   "no fabricated install path (PyPI claim absent)",
