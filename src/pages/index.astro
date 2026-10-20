@@ -63,6 +63,11 @@ const docs = [
     note: "ARCHITECTURE.md",
   },
   {
+    label: "Scientific validation status",
+    href: `${REPO}/blob/main/SCIENTIFIC_VALIDATION.md`,
+    note: "what is, and is not, validated",
+  },
+  {
     label: "Security notes",
     href: `${REPO}#security-notes`,
     note: "allowed root, size caps, stdio-only",
@@ -208,7 +213,7 @@ const docs = [
             <table class="w-full min-w-[34rem] text-left text-[0.82rem]">
               <caption class="px-4 pt-4 text-left text-[0.78rem] text-ink-mute">
                 63,879 library spectra scored against 220 query peaks · classical greedy peak
-                matching, ±0.02 Da · 94.9 s · 6 hits above the FDR threshold
+                matching, ±0.02 Da · 94.9 s · 6 hits at q ≤ 0.05
               </caption>
               <thead>
                 <tr class="text-[0.72rem] uppercase tracking-wider text-ink-mute">
@@ -240,9 +245,11 @@ const docs = [
             The report MSMCP returns leads with its own caveat: these are candidate library matches
             ranked by the stated scorer and significance model, not validated compound
             identifications. Note the competition — the runner-up candidates are progesterone, a
-            constitutional isomer at the same precursor m/z. That is what a deterministic score plus
-            a false-discovery threshold buys an analytical chemist: the whole field, not one
-            confident answer.
+            constitutional isomer at the same precursor m/z. That is what a deterministic score buys
+            an analytical chemist: the whole field, not one confident answer. The q-values beside
+            those candidates are the tool's own significance estimate and are not yet calibrated —
+            MSMCP's scientific validation record marks that capability not validated — so read them
+            as a ranking aid, not as an error rate.
           </p>
         </div>
       </div>

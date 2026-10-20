@@ -91,6 +91,12 @@ check(
   /candidate library matches/i.test(html) && /not validated compound identifications/i.test(html),
 );
 check(
+  "significance is presented as uncalibrated",
+  !/above the FDR threshold|false-discovery threshold buys/i.test(html) &&
+    /not yet calibrated/i.test(html),
+  "SCIENTIFIC_VALIDATION.md marks calibrated significance NOT VALIDATED",
+);
+check(
   "no unverified testimonial or adoption claim",
   !/\b(testimonial|trusted by|used by \d|industry standard)\b/i.test(html),
 );
