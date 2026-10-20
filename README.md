@@ -21,12 +21,12 @@ portal, not a blog, and not a marketing site.
 
 ## Stack
 
-| Piece     | Choice                                     | Why                                                                                                                                                                       |
-| --------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Framework | **Astro 7** (static output)                | The same framework as the personal site, so the toolchain, conventions and deployment shape are already familiar. Static output means no runtime, no server, no database. |
-| Styling   | **Tailwind CSS 4** via `@tailwindcss/vite` | Tokens live in `src/styles/global.css` under `@theme`, exactly as on the personal site.                                                                                   |
-| Fonts     | Inter + JetBrains Mono (Google Fonts CDN)  | Reused from the personal site, with `preconnect`.                                                                                                                         |
-| Scripts   | None                                       | No client-side JavaScript is shipped. The mobile layout wraps instead of hiding behind a drawer, and the figures are CSS positioned from data.                            |
+| Piece     | Choice                                     | Why                                                                                                                                                                             |
+| --------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework | **Astro 7** (static output)                | The same framework as the personal site, so the toolchain, conventions and deployment shape are already familiar. Static output means no runtime, no server, no database.       |
+| Styling   | **Tailwind CSS 4** via `@tailwindcss/vite` | Tokens live in `src/styles/global.css` under `@theme`, exactly as on the personal site.                                                                                         |
+| Fonts     | Inter + Source Code Pro (Google Fonts CDN) | Inter for prose; Source Code Pro carries a real 600 for the mono labels, where JetBrains Mono shipped 400/500 and the browser synthesised the bold. `preconnect` on both hosts. |
+| Scripts   | None                                       | No client-side JavaScript is shipped. The mobile layout wraps instead of hiding behind a drawer, and the figures are CSS positioned from data.                                  |
 
 Nothing else. No analytics, no trackers, no cookie banner, no newsletter, no
 backend, no contact form, no separate documentation engine.

@@ -168,6 +168,45 @@ check(
   missingAssets.join(", "),
 );
 
+// ---- keyboard access to scrollable regions --------------------------------
+// A block that scrolls horizontally is unreachable by keyboard unless it can
+// take focus; axe reports `scrollable-region-focusable` at serious impact, and
+// only at the narrow viewport where it actually overflows.  Blocks that wrap
+// (`whitespace-pre-wrap` + `overflow-wrap:anywhere`) cannot overflow, so they
+// are exempt rather than carrying a focus stop that does nothing.
+const scrollable = (html.match(/<(?:pre|div|table)\b[^>]*>/g) ?? []).filter(
+  (t) => /mono-block|overflow-x-auto/.test(t) && !/whitespace-pre-wrap/.test(t),
+);
+const unfocusable = scrollable.filter((t) => !/tabindex="0"/.test(t));
+check(
+  `scrollable regions are keyboard reachable (${scrollable.length} checked)`,
+  unfocusable.length === 0,
+  unfocusable
+    .slice(0, 2)
+    .map((t) => t.slice(0, 60))
+    .join(" | "),
+);
+
+// ---- fonts -----------------------------------------------------------------
+// JetBrains Mono ships 400/500 while five labels ask for 600, so the browser
+// synthesises the bold. Source Code Pro carries a real 600 and a third of the
+// bytes. A font swap that silently drops the weight would undo that.
+const fontHref = /fonts\.googleapis\.com\/css2\?([^"]+)/.exec(html)?.[1] ?? "";
+check(
+  "monospace face ships a real 600 weight",
+  /Source\+Code\+Pro:wght@400;500;600/.test(fontHref) && !/JetBrains\+Mono/.test(fontHref),
+  fontHref.slice(0, 90),
+);
+
+// ---- install path on the first screen --------------------------------------
+const runIdx = html.indexOf("uv run msmcp");
+const exampleIdx = html.indexOf('id="example"');
+check(
+  "a runnable command appears before the example section",
+  runIdx !== -1 && exampleIdx !== -1 && runIdx < exampleIdx,
+  "the hero must carry the install, not only a link down the page",
+);
+
 // ---- inline-boundary whitespace --------------------------------------------
 // Astro's compiler trims whitespace around an inline tag when the source breaks
 // the line there, silently welding two words together ("server-side:" +

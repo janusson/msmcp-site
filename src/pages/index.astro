@@ -10,12 +10,13 @@ const description =
 const REPO = "https://github.com/janusson/MSMCP";
 
 /* Code snippets live here rather than inline: a JSON block in markup would be
-   parsed as an Astro expression. */
+   parsed as an Astro expression.  `uv sync` installs the runtime dependencies
+   only; the extras (chem, dev) are named in the prose beside it. */
 const installSnippet = [
   "git clone https://github.com/janusson/MSMCP.git",
   "cd MSMCP",
-  "uv sync --extra dev      # creates .venv, installs runtime + dev dependencies",
-  "uv run msmcp             # serves MCP over stdio",
+  "uv sync",
+  "uv run msmcp",
 ].join("\n");
 
 const zedSnippet = JSON.stringify(
@@ -237,11 +238,14 @@ const docs = [
           MSMCP puts your own data in front of an AI client — Claude, Zed, or any other MCP host.
           Ask it to open an mzML, MGF or imzML file, check a precursor mass against a formula,
           compute isotope and adduct patterns, score an MS/MS spectrum against your MSP library, or
-          summarise QC across a run. The model plans and interprets; the tools compute, on your
-          machine.
+          summarise QC across a run.
         </p>
 
-        <p class="mt-4 max-w-2xl leading-relaxed text-ink-soft">
+        <p class="mt-4 max-w-2xl text-[1.02rem] font-medium leading-relaxed text-head">
+          The model reasons. The tools compute.
+        </p>
+
+        <p class="mt-3 max-w-2xl leading-relaxed text-ink-soft">
           MCP — the Model Context Protocol — is the open standard that lets an assistant call tools
           and read files it is given. MSMCP is the mass spectrometry end of it.
         </p>
@@ -262,7 +266,15 @@ const docs = [
         </ul>
       </div>
 
-      <ReferenceFlow />
+      <div class="min-w-0 space-y-6">
+        <div class="card p-4">
+          <p class="text-[0.72rem] font-medium text-ink-mute">Run it now</p>
+          <pre
+            class="mono-block mt-2 p-3 text-[0.75rem] whitespace-pre-wrap [overflow-wrap:anywhere]"
+            aria-label="Install commands"><code>{installSnippet}</code></pre>
+        </div>
+        <ReferenceFlow />
+      </div>
     </div>
   </section>
 
@@ -298,10 +310,10 @@ const docs = [
 
         {/* turn 2 — inspect */}
         <div class="space-y-2 border-l-2 border-accent-soft pl-4">
-          <p class="font-mono text-[0.78rem] text-accent-ink">
+          <p class="font-mono text-[0.78rem] text-accent-ink [overflow-wrap:anywhere]">
             load_spectrum(file_path="experiment.mzML", spectrum_index=966)
           </p>
-          <div class="mono-block px-3.5 py-2.5 text-ink-soft">
+          <div class="mono-block px-3.5 py-2.5 text-ink-soft" tabindex="0">
             kind=spectrum &nbsp;format=mzML &nbsp;backend=msmcp.mzml &nbsp;ms_level=2<br />
             precursor_mz=315.2321 &nbsp;n_peaks=220 &nbsp;mz_range=[65.0382, 318.2416]<br />
             reference=<span class="text-accent-ink">"ptr:spectrum:264a5ae9…"</span>
@@ -311,10 +323,10 @@ const docs = [
 
         {/* turn 3 — ppm gate */}
         <div class="space-y-2 border-l-2 border-accent-soft pl-4">
-          <p class="font-mono text-[0.78rem] text-accent-ink">
+          <p class="font-mono text-[0.78rem] text-accent-ink [overflow-wrap:anywhere]">
             validate_precursor(theoretical_mass=315.2320, experimental_mass=315.2321)
           </p>
-          <div class="mono-block px-3.5 py-2.5 text-ink-soft">
+          <div class="mono-block px-3.5 py-2.5 text-ink-soft" tabindex="0">
             <span class="text-head">VALIDATION PASSED</span> — mass error <span class="text-head"
               >0.32 ppm</span
             >, within the 5.0 ppm gate for the generic instrument class.
@@ -323,11 +335,11 @@ const docs = [
 
         {/* turn 4 — dispatch */}
         <div class="space-y-2 border-l-2 border-accent-soft pl-4">
-          <p class="font-mono text-[0.78rem] text-accent-ink">
+          <p class="font-mono text-[0.78rem] text-accent-ink [overflow-wrap:anywhere]">
             search_library(spectrum_reference="ptr:spectrum:264a5ae9…",
             database_file="libraries/MASSBANK.msp", scoring_method="classical")
           </p>
-          <div class="mono-block px-3.5 py-2.5 text-ink-soft">
+          <div class="mono-block px-3.5 py-2.5 text-ink-soft" tabindex="0">
             Job ID: <span class="text-accent-ink">2aafd7b8…</span> — scanner reads the library from disk
             through the security boundary and searches it for real. The tool call returns immediately.
           </div>
@@ -335,42 +347,66 @@ const docs = [
 
         {/* turn 5 — poll */}
         <div class="space-y-2 border-l-2 border-accent-soft pl-4">
-          <p class="font-mono text-[0.78rem] text-accent-ink">
+          <p class="font-mono text-[0.78rem] text-accent-ink [overflow-wrap:anywhere]">
             check_search_status(job_id="2aafd7b8…") <span class="text-ink-mute">→ running</span> …
             <br />
             check_search_status(job_id="2aafd7b8…") <span class="text-ink-mute">→ completed</span>
           </p>
 
-          <div class="card overflow-x-auto bg-panel-soft">
-            <table class="w-full min-w-[34rem] text-left text-[0.82rem]">
-              <caption class="px-4 pt-4 text-left text-[0.78rem] text-ink-mute">
-                63,879 library spectra scored against 220 query peaks · classical greedy peak
-                matching, ±0.02 Da · 94.9 s · 6 hits at q ≤ 0.05
-              </caption>
-              <thead>
-                <tr class="text-[0.72rem] uppercase tracking-wider text-ink-mute">
-                  <th scope="col" class="px-4 py-2 font-medium">Rank</th>
-                  <th scope="col" class="px-4 py-2 font-medium">Candidate (MassBank accession)</th>
-                  <th scope="col" class="px-4 py-2 text-right font-medium">Cosine</th>
-                  <th scope="col" class="px-4 py-2 text-right font-medium">q-value</th>
-                </tr>
-              </thead>
-              <tbody class="font-mono">
-                {
-                  hits.map((h) => (
-                    <tr class="border-t border-line-soft">
-                      <td class="px-4 py-2 text-ink-mute">{h.rank}</td>
-                      <td class="px-4 py-2 font-sans">
-                        <span class="text-ink">{h.name}</span>
-                        <span class="ml-2 text-[0.74rem] text-ink-mute">{h.id} · C21H30O2</span>
-                      </td>
-                      <td class="px-4 py-2 text-right text-head">{h.cosine}</td>
-                      <td class="px-4 py-2 text-right text-ink-soft">{h.q}</td>
-                    </tr>
-                  ))
-                }
-              </tbody>
-            </table>
+          <div class="card bg-panel-soft">
+            <p class="px-4 pt-4 text-[0.78rem] text-ink-mute">
+              63,879 library spectra scored against 220 query peaks · classical greedy peak
+              matching, ±0.02 Da · 94.9 s · 6 hits at q ≤ 0.05
+            </p>
+            <div
+              class="overflow-x-auto"
+              tabindex="0"
+              role="region"
+              aria-label="Spectral library search candidates"
+            >
+              <table class="w-full text-left text-[0.78rem] sm:text-[0.82rem]">
+                <caption class="sr-only">Spectral library search candidates</caption>
+                <thead>
+                  <tr class="text-[0.72rem] uppercase tracking-wider text-ink-mute">
+                    <th scope="col" class="hidden px-3 py-2 font-medium sm:table-cell sm:px-4"
+                      >Rank</th
+                    >
+                    <th scope="col" class="px-3 py-2 font-medium sm:px-4"
+                      >Candidate (MassBank accession)</th
+                    >
+                    <th scope="col" class="px-3 py-2 text-right font-medium sm:px-4">Cosine</th>
+                    <th scope="col" class="px-3 py-2 text-right font-medium sm:px-4"
+                      ><span class="sm:hidden">q</span><span class="hidden sm:inline">q-value</span
+                      ></th
+                    >
+                  </tr>
+                </thead>
+                <tbody class="font-mono">
+                  {
+                    hits.map((h) => (
+                      <tr class="border-t border-line-soft">
+                        <td class="hidden px-3 py-2 text-ink-mute sm:table-cell sm:px-4">
+                          {h.rank}
+                        </td>
+                        <td class="px-3 py-2 font-sans sm:px-4">
+                          <span class="mr-1.5 text-ink-mute sm:hidden">{h.rank}.</span>
+                          <span class="text-ink">{h.name}</span>
+                          <span class="block text-[0.7rem] text-ink-mute sm:ml-2 sm:inline sm:text-[0.74rem]">
+                            {h.id} · C21H30O2
+                          </span>
+                        </td>
+                        <td class="px-3 py-2 text-right whitespace-nowrap text-head sm:px-4">
+                          {h.cosine}
+                        </td>
+                        <td class="px-3 py-2 text-right whitespace-nowrap text-ink-soft sm:px-4">
+                          {h.q}
+                        </td>
+                      </tr>
+                    ))
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <p class="text-[0.85rem] text-ink-soft">
@@ -523,7 +559,8 @@ const docs = [
           Clone, sync, run
         </h3>
         <pre
-          class="mono-block mt-3 p-4 text-ink"><code class="text-ink">{installSnippet}</code></pre>
+          class="mono-block mt-3 p-4 text-ink"
+          tabindex="0"><code class="text-ink">{installSnippet}</code></pre>
         <p class="mt-3 text-[0.85rem] leading-relaxed text-ink-soft">
           Optional extras: <code>--extra chem</code> adds RDKit so SMILES can be converted to a formula;
           embedding-based scoring needs the DreaMS model installed separately from source. Neither is
@@ -535,7 +572,9 @@ const docs = [
         <h3 class="text-[0.8rem] font-semibold uppercase tracking-[0.14em] text-ink-mute">
           Point a client at it
         </h3>
-        <pre class="mono-block mt-3 p-4 text-ink"><code class="text-ink">{zedSnippet}</code></pre>
+        <pre
+          class="mono-block mt-3 p-4 text-ink"
+          tabindex="0"><code class="text-ink">{zedSnippet}</code></pre>
         <p class="mt-3 text-[0.85rem] leading-relaxed text-ink-soft">
           Shown for Zed's <code>context_servers</code>; any host that can spawn a stdio MCP server
           configures the same command and arguments. Replace all three paths: <code>uv</code> itself (<code
