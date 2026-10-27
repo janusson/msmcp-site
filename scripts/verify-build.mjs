@@ -4,7 +4,7 @@
  *
  * This page makes claims about software, so the things that break silently are
  * the things that matter: an anchor that no longer resolves, a tool name that
- * drifts from the thirteen the server actually exposes, two words welded
+ * drifts from the tools the server actually exposes, two words welded
  * together by the template compiler, an external link that lost its
  * rel="noopener".  Each check below failed for a real reason at least once
  * while this page was built.
@@ -13,14 +13,17 @@
  */
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { resolve, sep } from "node:path";
+import { SITE } from "../astro.config.mjs";
 
 const DIST = "dist/index.html";
 
-/** The fourteen tools exposed by MSMCP main (src/msmcp/tools/*.py). */
+/** The fifteen tools exposed by the release candidate (src/msmcp/tools/*.py). */
 const TOOLS = [
   "ping",
   "load_mzml_summary",
   "list_spectra",
+  "extract_chromatograms",
   "load_spectrum",
   "summarise_reference",
   "release_reference",
@@ -60,7 +63,13 @@ check("lang attribute on <html>", /<html[^>]+lang="[a-z-]+"/i.test(html));
 check("meta description present", /<meta\s+name="description"\s+content="[^"]{50,}"/i.test(html));
 
 // ---- in-page anchors -------------------------------------------------------
-const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
+const idList = [...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]);
+const ids = new Set(idList);
+check("element IDs are unique", ids.size === idList.length);
+check(
+  "skip link targets a focusable main landmark",
+  /<main\b[^>]*id="main"[^>]*tabindex="-1"/.test(html),
+);
 const anchors = [...html.matchAll(/href="#([^"]+)"/g)].map((m) => m[1]);
 const deadAnchors = [...new Set(anchors)].filter((a) => a !== "" && !ids.has(a));
 check(
@@ -113,10 +122,32 @@ check(
   /candidate library matches/i.test(html) && /not validated compound identifications/i.test(html),
 );
 check(
-  "significance is presented as uncalibrated",
-  !/above the FDR threshold|false-discovery threshold buys/i.test(html) &&
-    /not yet calibrated/i.test(html),
-  "SCIENTIFIC_VALIDATION.md marks calibrated significance NOT VALIDATED",
+  "example is explicitly illustrative, not a real acquisition claim",
+  /Illustrative MCP tool calls/.test(html) && !/transcript below is a real run/.test(html),
+);
+check(
+  "no historical q-value table or FDR hit-count claim",
+  !/<th\b[^>]*>q-value|hits above the FDR threshold|false-discovery threshold buys/i.test(html),
+);
+check(
+  "uncalibrated search is disclosed without a q-value claim",
+  /Search significance is uncalibrated/.test(html) &&
+    /no FDR, p-value, q-value or identification-confidence claim/.test(html),
+);
+check(
+  "chromatogram extraction is presented as shipped",
+  html.includes("extract_chromatograms") && !/open PR #63/.test(html),
+);
+check(
+  "installation boundary is stated accurately",
+  /installs from a built wheel in a fresh Python 3.13 environment/.test(html) &&
+    /massflow[\s\S]{0,80}not a core dependency/.test(html) &&
+    /MCP SDK 2.0\+/.test(html),
+  "core install, optional imaging extra and SDK requirement must be explicit",
+);
+check(
+  "context gating is disclosed",
+  /MS1 or non-MS2 queries/.test(html) && /context-eligibility counts/.test(html),
 );
 check(
   "no unverified testimonial or adoption claim",
@@ -140,14 +171,63 @@ check(
   unrel.map((l) => l.href).join(", "),
 );
 
-const TRUSTED =
-  /^https:\/\/(github\.com\/janusson|docs\.astral\.sh|fonts\.googleapis\.com|fonts\.gstatic\.com)/;
-const offRepo = external.filter((l) => !TRUSTED.test(l.href));
+const offRepo = external.filter(({ href }) => {
+  const url = new URL(href);
+  return !(
+    (url.hostname === "github.com" && /^\/janusson(?:\/|$)/.test(url.pathname)) ||
+    url.hostname === "docs.astral.sh" ||
+    url.hostname === "www.ericjanusson.ca"
+  );
+});
 check(
   "every external link points at a known-in-good-faith host",
   offRepo.length === 0,
   offRepo.map((l) => l.href).join(", "),
 );
+
+for (const href of [
+  "https://github.com/janusson/MSMCP",
+  "https://github.com/janusson",
+  "https://www.ericjanusson.ca",
+]) {
+  check(
+    `canonical destination is linked: ${href}`,
+    external.some((link) => link.href === href),
+  );
+}
+
+// Resolve every local href/src, not just fragment-only navigation and OG images.
+const brokenLocal = [];
+for (const [, raw] of html.matchAll(/\b(?:href|src)="([^"]+)"/g)) {
+  const url = new URL(raw, `${SITE}/`);
+  if (url.origin !== SITE) continue;
+  const pathname = decodeURIComponent(url.pathname);
+  const path = resolve("dist", `.${pathname}`, pathname.endsWith("/") ? "index.html" : "");
+  if (!path.startsWith(`${resolve("dist")}${sep}`) || !existsSync(path)) {
+    brokenLocal.push(raw);
+  } else if (url.hash) {
+    const target = await readFile(path, "utf8");
+    if (!target.includes(`id="${decodeURIComponent(url.hash.slice(1))}"`)) brokenLocal.push(raw);
+  }
+}
+check(
+  "every internal href/src resolves in the production build",
+  brokenLocal.length === 0,
+  brokenLocal.join(", "),
+);
+
+// ---- canonical origin & discovery ------------------------------------------
+check(
+  "canonical and OpenGraph origin stay https://msmcp.dev/",
+  SITE === "https://msmcp.dev" &&
+    html.includes(`rel="canonical" href="${SITE}/"`) &&
+    html.includes(`property="og:url" content="${SITE}/"`),
+);
+const robots = await readFile("dist/robots.txt", "utf8");
+const sitemap = await readFile("dist/sitemap.xml", "utf8");
+check("robots points at the canonical sitemap", robots.includes(`Sitemap: ${SITE}/sitemap.xml`));
+check("sitemap lists the canonical home page", sitemap.includes(`<loc>${SITE}/</loc>`));
+check("static page ships no client-side scripts", !/<script\b/i.test(html));
 
 // ---- referenced local assets ----------------------------------------------
 // An og:image pointing at a file the build never emitted is invisible in a
