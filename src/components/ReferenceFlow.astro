@@ -6,15 +6,15 @@
  */
 ---
 
-<div class="card p-5">
+<div class="card min-w-0 p-5">
   <p class="eyebrow mb-3">How the peaks stay out of the prompt</p>
 
   <ol class="space-y-3 text-[0.82rem]">
     <li class="flex items-start gap-3">
       <span class="font-mono text-ink-mute">1</span>
       <span class="text-ink-soft">
-        <span class="font-mono text-ink">experiment.mzML</span> — 220 peaks, parsed in the server process.
-        mzML, MGF and imzML are read locally; vendor formats are refused with conversion guidance.
+        <span class="font-mono text-ink">experiment.mzML</span> — a local acquisition parsed in the server
+        process. Reader choice and available metadata depend on the input format.
       </span>
     </li>
 
@@ -41,15 +41,15 @@
     <li class="flex items-start gap-3">
       <span class="font-mono text-ink-mute">4</span>
       <span class="text-ink-soft">
-        Every later tool dereferences it server-side:{" "}
+        Reference-aware tools read the stored peaks server-side:{" "}
         <span class="font-mono text-[0.78rem] text-ink"
-          >validate_precursor · compute_cosine · generate_qc_summary · search_library</span
+          >summarise_reference · compute_cosine · search_library</span
         >
       </span>
     </li>
   </ol>
 
   <p class="mt-4 border-t border-line-soft pt-3 text-[0.78rem] text-ink-mute">
-    The model carries references, job IDs and verdicts — never spectra.
+    This path carries references, job IDs and compact reports instead of full peak arrays.
   </p>
 </div>

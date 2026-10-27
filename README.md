@@ -1,63 +1,165 @@
 # msmcp-site
 
-Source for the [MSMCP](https://github.com/janusson/MSMCP) project site — a single
-landing page for the Model Context Protocol server for computational mass
-spectrometry.
+Source for [msmcp.dev](https://msmcp.dev), the single-page project website for
+[MSMCP](https://github.com/janusson/MSMCP), a local Model Context Protocol server
+for computational mass spectrometry.
 
-MSMCP puts your own mass spectrometry data in front of an AI client: it is an
-open-source MCP server that lets Claude, Zed or any other MCP host read your
-mzML, MGF and imzML files and work on them with real chemistry — precursor and
-isotope calculations, MS/MS library matching, QC.
-
-The site's job is narrow: inside thirty seconds, a mass spectrometrist or a
-scientific-software developer should understand what MSMCP does, see a real
-workflow, and find a working path to installation. It is one page — not a docs
-portal, not a blog, and not a marketing site.
-
-**Live at:** https://msmcp.dev — deployed from this repository to GitHub Pages
-(see [Deployment](#deployment))
-
----
+**Hosting: GitHub Pages. Cloudflare supplies DNS only, not Pages or Workers.**
+The framework, dark visual design and static/no-client-JavaScript architecture are
+preserved. This repository does not contain the Python server or the author's
+[personal site](https://www.ericjanusson.ca).
 
 ## Stack
 
-| Piece     | Choice                                     | Why                                                                                                                                                                             |
-| --------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Framework | **Astro 7** (static output)                | The same framework as the personal site, so the toolchain, conventions and deployment shape are already familiar. Static output means no runtime, no server, no database.       |
-| Styling   | **Tailwind CSS 4** via `@tailwindcss/vite` | Tokens live in `src/styles/global.css` under `@theme`, exactly as on the personal site.                                                                                         |
-| Fonts     | Inter + Source Code Pro (Google Fonts CDN) | Inter for prose; Source Code Pro carries a real 600 for the mono labels, where JetBrains Mono shipped 400/500 and the browser synthesised the bold. `preconnect` on both hosts. |
-| Scripts   | None                                       | No client-side JavaScript is shipped. The mobile layout wraps instead of hiding behind a drawer, and the figures are CSS positioned from data.                                  |
+- Astro 7, static output; versions are pinned by `package-lock.json`.
+- Tailwind CSS 4 via `@tailwindcss/vite`; tokens in `src/styles/global.css`.
+- Inter and Source Code Pro via Google Fonts. Browsers contact Google's font
+  CDN; there is no analytics script or application backend.
+- Node 24 for CI and local development (see `.node-version`).
 
-Nothing else. No analytics, no trackers, no cookie banner, no newsletter, no
-backend, no contact form, no separate documentation engine.
+## Develop and validate
 
-## Local development
-
-Requires Node 20+ (CI uses 24).
-
-```bash
-make deps          # npm install, stamped so it only runs when package files change
-make dev           # Astro dev server with HMR at http://localhost:4321
-make build         # static build into dist/
-make preview       # serve the production build locally
+```sh
+npm ci
+make check         # Astro/TypeScript checks and Prettier
+make verify        # production build, then static contract/internal-link checks
+make all           # both, in CI order
 ```
 
-The gate, in the order CI runs it:
+`make dev` and `make preview` run local development/preview servers; `make build`
+only writes `dist/`. None of these commands deploys the site. After `npm ci`, the
+Makefile may run `npm install` once to create its existing dependency stamp.
 
-```bash
-make check         # astro check (types) + prettier --check   — fast, no build
-make verify        # build, then assert the built HTML        — the real gate
-make all           # check, then verify
+`scripts/verify-build.mjs` checks:
+
+- One H1, language, description, unique IDs, and a focusable skip-link destination.
+- Every fragment and local `href`/`src` resolves in `dist/`, including CSS/assets.
+- All 15 tools advertised by the release candidate, with one call row each.
+- Illustrative workflow labelling, candidate-not-identification framing,
+  uncalibrated search, context gating and the core/optional imaging boundary.
+- Chromatogram extraction is presented as shipped, not as an open PR.
+- No historical q-value table, FDR hit-count claim, invented package-install path,
+  or unsupported adoption claim.
+- Exact canonical and OpenGraph home URL, sitemap and robots consistency, social
+  image/favicon existence, HTTPS links, bounded external destinations and no
+  client-side script.
+- Template leaks and words welded together across Astro inline boundaries.
+
+These are static regression checks, not proof of scientific correctness or server
+compatibility. External links are not fetched in the offline CI gate. Recheck
+live destinations separately when changing them, including README fragments.
+
+### Browser review
+
+After layout changes, render the production build, not only the development page.
+Review at 320, 390, 768 and 1440 CSS pixels, with JavaScript disabled, and check:
+
+- No document-level horizontal overflow; long code scrolls inside its own block.
+- Header navigation wraps, all links stay reachable, and anchors clear the header.
+- Tab reaches the skip link first and moves focus to main; code blocks can be
+  focused and scrolled with the keyboard.
+- Isotope labels and minor-peak descriptions remain readable on narrow screens.
+- Reduced-motion preference disables smooth scrolling; focus indicators and
+  contrast remain visible.
+
+## Content and scientific boundaries
+
+The page describes source capabilities, not universal compatibility or a newly
+published server release. The server's current main requires **Python >=3.13**
+and **MCP SDK >=2.0**. The candidate core package installs from a built wheel in
+a fresh Python 3.13 environment without `massflow`; the optional `msmcp[imaging]`
+extra is separate, and its `massflow` package name collides with the analytical
+MassFlow project. Core mzML/MGF works without either. The package is not yet
+published to PyPI, so the page documents the source path.
+
+The old acquisition transcript, timings, candidate table and q-values have been
+removed. No new acquisition results or benchmark numbers were invented. The new
+workflow is explicitly illustrative, uses placeholders for the chosen index and
+returned handles, and starts with `list_spectra` to avoid searching an MS1 survey
+scan against an MS/MS library.
+
+The release candidate (`MSMCP` 1.0.2) ships the similarity-only search contract
+`msmcp.search.similarity.v1`: ranked candidates, no calibrated p/q values or
+significance filtering. Issue #79's acquisition-context gate is integrated: MS1
+queries are refused, incompatible precursor/polarity/charge/adduct context is
+excluded before ranking, and missing context remains labelled unknown. Neither a
+high cosine score nor a context match establishes an identification or
+error-rate control. The site makes no FDR, confidence, identification-accuracy or
+all-formats/transports/instruments validation claim. Chromatogram extraction
+(PR #63) is integrated as a bounded tool.
+
+The glucose figure was rechecked with `annotate_isotopes("C6H12O6")` on 18 October
+2026: M = 180.0634 Da / 1.0000, M+1 = 181.0668 Da / 0.0686, M+2 = 182.0681 Da /
+0.0147. These are rounded neutral isotopologue masses, not precursor m/z. The
+minor-peak panel uses an abundance scale of 0–0.08; it is not a “100×” zoom or a
+full isotope fine-structure simulation.
+
+### Maintenance map
+
+| Content                                                                | File                                                                 | Recheck when                                                   |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Messaging, workflow, install/client JSON, limitations, tool list, docs | `src/pages/index.astro`                                              | Main/tool signatures, packaging or scientific contracts change |
+| Reference-aware tool flow                                              | `src/components/ReferenceFlow.astro`                                 | Reference API changes                                          |
+| Glucose isotope plot                                                   | `src/components/IsotopeFigure.astro`                                 | Isotope calculations change; rerun the tool                    |
+| Navigation and author links                                            | `src/components/SiteHeader.astro`, `src/components/SiteFooter.astro` | Destinations change                                            |
+| Canonical origin                                                       | `astro.config.mjs`                                                   | Domain changes                                                 |
+| Social metadata and landmarks                                          | `src/layouts/BaseLayout.astro`                                       | Layout or metadata changes                                     |
+| Discovery files                                                        | `public/robots.txt`, `public/sitemap.xml`                            | Canonical origin or page inventory changes                     |
+| Static regression checks                                               | `scripts/verify-build.mjs`                                           | Any of the above changes                                       |
+
+## Hosting and approval boundary
+
+Verified read-only on 18 October 2026:
+
+- MSMCP's GitHub homepage is `https://msmcp.dev`.
+- Canonical repository: `https://github.com/janusson/MSMCP`.
+- Author profile: `https://github.com/janusson`; its blog field points to
+  `https://www.ericjanusson.ca`, which serves the author's site.
+- GitHub Pages API for `janusson/msmcp-site`: `build_type=workflow`,
+  `cname=msmcp.dev`, `https_enforced=true`.
+- `https://msmcp.dev` responds over HTTPS with `200` and `server: GitHub.com`.
+- Apex DNS resolves to GitHub Pages addresses `185.199.108.153`,
+  `185.199.109.153`, `185.199.110.153`, `185.199.111.153`.
+
+### Existing configuration (unchanged)
+
+`.github/workflows/pages.yml` contains three jobs:
+
+1. **Gate:** Node from `.node-version`, `npm ci`, then `make all`.
+2. **Build:** depends on Gate; `withastro/action@v6` builds and uploads an artifact.
+3. **Deploy:** `actions/deploy-pages@v5`, guarded by
+   `github.ref == 'refs/heads/main'`, to the `github-pages` environment.
+
+Pull requests run Gate and Build but skip Deploy. A feature-branch push does not
+match the workflow's main-only push trigger. A PR is therefore safe for review
+without publishing; **merging to main will trigger the existing deployment**.
+Do not merge, dispatch the workflow on main, publish a release, or change DNS or
+hosting settings without separate owner approval. This maintenance task does none
+of those things.
+
+Pages settings already select GitHub Actions with the custom domain `msmcp.dev`.
+There is intentionally no `public/CNAME`: with a custom Actions publishing source,
+the repository Pages setting is authoritative. Do not add a second deployment
+workflow, switch hosts, or create Cloudflare configuration for this static-site
+maintenance task.
+
+To verify existing hosting without deploying:
+
+```sh
+gh api repos/janusson/msmcp-site/pages --jq '{cname,build_type,https_enforced}'
+dig +short msmcp.dev
+curl -sSI https://msmcp.dev
 ```
 
-`scripts/verify-build.mjs` is a post-build contract check rather than a unit-test
-suite, because this project has no application logic to unit-test. It asserts the
-things that break silently on a static page making claims about software:
+Review the focused website PR and its CI before authorizing a merge/deployment.
+Server dependency resolution and integration/calibration work remain separate
+approvals, not prerequisites to building this static website and not silently
+completed by its publication.
 
 - exactly one `<h1>`, a `lang`, and a meta description;
 - **every in-page `#anchor` resolves** — a dead nav link is the most likely
   regression on a one-page site;
-- **all fourteen MSMCP tool names still appear**, and the tools reference has
+- **all fifteen MSMCP tool names still appear**, and the tools reference has
   exactly one `data-tool` row per tool with a call in it, so a renamed or added
   tool cannot drift the page out of sync with the server;
 - the hero phrasing and the "candidates, not identifications" framing are intact;
@@ -205,6 +307,27 @@ curl -sSI https://www.msmcp.dev | head -3                # expect a redirect to 
 The Actions run is the other check: the `Gate`, `Build` and `Deploy` jobs appear
 separately, and a failed gate means the build never ran and nothing was published.
 
+After an authorized merge to `main`, verify the deployment without changing
+anything else:
+
+```bash
+gh run list --repo janusson/msmcp-site --workflow pages.yml --limit 3
+# Expect Gate -> Build -> Deploy all successful on the merge commit.
+gh run view <run-id> --repo janusson/msmcp-site --log-failed
+# Expect no failed step; Gate must include `make all` and its 15-tool contract.
+curl -sS https://msmcp.dev/ | grep -E 'canonical|og:url|<title>'
+# Expect <title>MSMCP — a local MCP server for mass spectrometry</title>,
+# canonical https://msmcp.dev/, and no q-value table or PyPI install claim.
+curl -sS https://msmcp.dev/robots.txt
+curl -sS https://msmcp.dev/sitemap.xml
+curl -sSI https://www.msmcp.dev | head -5
+```
+
+Render the deployed page at 390 px and 1440 px and confirm there is no
+document-level horizontal overflow, every nav anchor resolves, and the visible
+tool count is 15. The site is static, so a successful deploy plus those checks is
+the complete post-merge verification.
+
 ### Hosting history
 
 Cloudflare Pages was considered, because the domain is registered at Cloudflare, and
@@ -220,43 +343,38 @@ Settings → Pages.
 Where the load-bearing content lives, and what has to be re-checked when MSMCP
 changes:
 
-| Content                                          | Lives in                                                                 | Re-check when                                                                                                                                                             |
-| ------------------------------------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The transcribed workflow, hit table, and timings | `src/pages/index.astro` — the `hits` array and the transcript markup     | `search_library` scoring, the report format, or the null model changes. The numbers came from a single recorded run (see below); they are a record, not a live benchmark. |
-| The isotope envelope                             | `src/components/IsotopeFigure.astro` — the `peaks` array                 | `annotate_isotopes` maths changes. Re-run the tool and paste its output.                                                                                                  |
-| The tool list (13 names)                         | `src/pages/index.astro` — `tools`; guarded by `scripts/verify-build.mjs` | A tool is added, renamed or removed in `src/msmcp/tools/`.                                                                                                                |
-| Install commands                                 | `src/pages/index.astro` — `installSnippet`                               | The distribution story changes (PyPI, `server.json`, a container).                                                                                                        |
-| Document links                                   | `src/pages/index.astro` — `docs`                                         | A file is renamed or moved in the MSMCP repository.                                                                                                                       |
+| Content                   | Lives in                                                             | Re-check when                                                                                              |
+| ------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| The illustrative workflow | `src/pages/index.astro` — the `workflow` array                       | A tool signature, the search contract or the install path changes. It is illustrative, not a recorded run. |
+| The isotope envelope      | `src/components/IsotopeFigure.astro` — the `peaks` array             | `annotate_isotopes` maths changes. Re-run the tool and paste its output.                                   |
+| The tool list (15 names)  | `src/pages/index.astro` — `toolGuide`; guarded by `verify-build.mjs` | A tool is added, renamed or removed in `src/msmcp/tools/`.                                                 |
+| Install commands          | `src/pages/index.astro` — `installSnippet`                           | The distribution story changes (PyPI, `server.json`, a container).                                         |
+| Document links            | `src/pages/index.astro` — `docs`                                     | A file is renamed or moved in the MSMCP repository.                                                        |
 
 **Cardinal rule for edits:** every number and every code block on the page must be
 something the software actually printed or a file that actually exists. No
 benchmark, testimonial, adoption figure or security guarantee is invented. If a
 claim cannot be reproduced, it comes off the page rather than getting softened.
 
-## Provenance of the example on the page
+## Provenance of the examples on the page
 
-The workflow in the "Example" section is a real run, not an illustration:
+The workflow in the "Example" section is explicitly **illustrative**, not a
+recorded acquisition or benchmark. It uses placeholders for the chosen spectrum
+index and returned handles, and no acquisition or library is bundled.
 
-- **Query:** spectrum #966 of a Bruker maXis LC–MS/MS acquisition (RT 3.795 min,
-  precursor m/z 315.2321, 220 peaks). The acquisition's filename is deliberately
-  not published on the page.
-- **Library:** MassBank's public MSP library, 63,879 spectra, read from disk
-  through the same `SecurityPolicy` as the query.
-- **Scoring:** `classical` — greedy peak matching, ±0.02 Da — with the report's own
-  FDR threshold. Top candidate 0.8309 cosine, q = 0.0125; the runner-ups are
-  progesterone, a constitutional isomer at the same precursor m/z.
-- **The ppm verdict** (0.32 ppm) was produced by calling `validate_precursor`
-  against MassBank's reference mass, and is reproducible in one tool call.
-- **The isotope envelope** is `annotate_isotopes("C6H12O6")` output, transcribed
-  without rounding. Note that the MSMCP README's inline example of this tool shows
-  older values (`M+1` at 181.0721, `[M+H]+` at +1.006728 Da); the tool itself
-  prints 181.0668 and +1.007276 Da, which is what the page uses.
+The glucose isotope figure is real `annotate_isotopes("C6H12O6")` output: M =
+180.0634 Da / 1.0000, M+1 = 181.0668 Da / 0.0686, M+2 = 182.0681 Da / 0.0147.
+These are rounded neutral isotopologue masses, not precursor m/z. The minor-peak
+panel uses an abundance scale of 0–0.08; it is not a "100×" zoom or a full isotope
+fine-structure simulation.
+
+No q-values, FDR-controlled hit counts, benchmark timings or identification
+confidence figures appear on the page.
 
 ## Accessibility and performance notes
 
 - Semantic landmarks (`header`, `main`, `nav`, `footer`), one `<h1>`, a skip link,
-  visible focus rings, and `<table>` markup with `<caption>`/`scope` for the hit
-  table rather than a styled div grid.
+  visible focus rings, and keyboard-reachable scrollable code blocks.
 - Figures carry `role="img"` with a full text description, so the plotted values
   reach a screen reader.
 - Colour contrast targets WCAG AA against the dark canvas; the palette is a dark

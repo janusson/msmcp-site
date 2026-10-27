@@ -43,7 +43,7 @@ jobs:
         run: npm ci
 
       # `make all` = astro check, Prettier, the build, then the post-build contract
-      # checks on dist/ (anchor integrity, the thirteen tool names, link hygiene,
+      # checks on dist/ (anchor integrity, the fifteen tool names, link hygiene,
       # referenced assets, template sanity, inline-boundary whitespace).
       - name: Types, formatting, build and post-build contract checks
         run: make all

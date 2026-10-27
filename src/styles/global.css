@@ -34,7 +34,7 @@
     color-scheme: dark;
     scroll-behavior: smooth;
     /* Anchor targets clear the sticky header. */
-    scroll-padding-top: 5.5rem;
+    scroll-padding-top: 8rem;
     -webkit-text-size-adjust: 100%;
   }
 
@@ -45,6 +45,7 @@
     font-size: 1rem;
     line-height: 1.7;
     -webkit-font-smoothing: antialiased;
+    overflow-wrap: anywhere;
   }
 
   a {
@@ -167,6 +168,14 @@
     border: 1px solid var(--color-line-soft);
     border-radius: 8px;
     overflow-x: auto;
+    overflow-wrap: normal;
+  }
+
+  .mono-block > code {
+    font-size: inherit;
+    border: 0;
+    padding: 0;
+    background: transparent;
   }
 
   .prose-link {

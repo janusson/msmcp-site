@@ -4,48 +4,35 @@
 // destination stays reachable with the keyboard and with JS disabled.
 const links = [
   { href: "#example", label: "Example" },
-  { href: "#why", label: "Why MSMCP" },
+  { href: "#limitations", label: "Limitations" },
   { href: "#get-started", label: "Get started" },
   { href: "#tools", label: "Tools" },
-  {
-    href: "https://github.com/janusson/MSMCP#quick-start",
-    label: "Docs",
-    external: true,
-  },
+  { href: "#docs", label: "Docs" },
 ];
 ---
 
 <header class="sticky top-0 z-50 border-b border-line-soft bg-canvas/90 backdrop-blur-sm">
   <nav class="shell flex flex-wrap items-center gap-x-5 gap-y-1 py-3" aria-label="Primary">
     <a href="#top" class="mr-auto flex items-baseline gap-2 text-ink hover:text-accent-ink">
-      <span class="font-mono text-[1.05rem] font-semibold tracking-tight text-head">MSMCP</span>
-      <span class="hidden text-[0.72rem] text-ink-mute sm:inline"
-        >MCP server for mass spectrometry</span
-      >
+      <span class="font-mono text-[1.05rem] font-semibold tracking-tight text-head"> MSMCP </span>
+      <span class="hidden text-[0.72rem] text-ink-mute sm:inline">
+        MCP server for mass spectrometry
+      </span>
     </a>
 
     {
       links.map((l) => (
-        <a
-          href={l.href}
-          target={l.external ? "_blank" : undefined}
-          rel={l.external ? "noopener" : undefined}
-          class="text-[0.85rem] font-medium text-ink-soft hover:text-accent-ink"
-        >
+        <a href={l.href} class="text-[0.85rem] font-medium text-ink-soft hover:text-accent-ink">
           {l.label}
-          {l.external && <span aria-hidden="true"> ↗</span>}
         </a>
       ))
     }
 
     <a
       href="https://github.com/janusson/MSMCP"
-      target="_blank"
-      rel="noopener"
       class="text-[0.85rem] font-medium text-ink-soft hover:text-accent-ink"
     >
       GitHub<span aria-hidden="true"> ↗</span>
-      <span class="sr-only">(opens in a new tab)</span>
     </a>
   </nav>
 </header>
