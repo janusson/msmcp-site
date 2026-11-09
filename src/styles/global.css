@@ -94,6 +94,14 @@
     padding-inline: 1.25rem;
   }
 
+  .rule-heading {
+    color: var(--color-head);
+    font-size: clamp(1.65rem, 3vw, 2.4rem);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
   .eyebrow {
     font-family: var(--font-mono);
     font-size: 0.72rem;

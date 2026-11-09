@@ -1,0 +1,3 @@
+{
+  "result": "## Search Dispatched\n\n**Job ID:** `8fda023464c74187852cd3d3c1dddf99`\n\n**Query:** `ptr:spectrum:d5672c83d39086a3c8beeb5d` (4 real peaks, read from the server-side store)\n\n**Query context:** MS2, precursor m/z 195.0877 (precursor gate enabled)\n\n✅ Library `<DATA>/caffeine_library.msp` will be read from disk (MSP) through the security boundary and searched for real.\n\nPoll for the report with:\n\n    check_search_status(job_id=\"8fda023464c74187852cd3d3c1dddf99\")\n    cancel_search(job_id=\"8fda023464c74187852cd3d3c1dddf99\")\n"
+}

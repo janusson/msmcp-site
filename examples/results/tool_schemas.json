@@ -1,0 +1,1711 @@
+[
+  {
+    "name": "load_mzml_summary",
+    "title": "Summarise an mzML file",
+    "description": "Summarise the first spectra of a local .mzML file as compact text.\n\nFor each spectrum reports MS level, retention time, total ion current,\npeak count, the ten most intense peaks and the base peak.  Use it to\ninspect an acquisition before scoring or searching it.\n\nOutput is capped at *max_spectra* spectra to stay inside the context\nwindow; the footer states the file's total spectrum count.\n",
+    "input_schema": {
+      "properties": {
+        "file_path": {
+          "description": "Path to a local .mzML file, absolute or relative to the server working directory.",
+          "title": "File Path",
+          "type": "string"
+        },
+        "max_spectra": {
+          "default": 5,
+          "description": "How many spectra to summarise. Raise it to look further into the run.",
+          "maximum": 50,
+          "minimum": 1,
+          "title": "Max Spectra",
+          "type": "integer"
+        },
+        "noise_threshold": {
+          "default": 0.0,
+          "description": "Minimum absolute intensity; peaks below this are omitted. 0.0 keeps every peak.",
+          "minimum": 0.0,
+          "title": "Noise Threshold",
+          "type": "number"
+        }
+      },
+      "required": [
+        "file_path"
+      ],
+      "title": "load_mzml_summaryArguments",
+      "type": "object"
+    },
+    "execution": null,
+    "output_schema": {
+      "properties": {
+        "result": {
+          "title": "Result",
+          "type": "string"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "load_mzml_summaryOutput",
+      "type": "object"
+    },
+    "icons": null,
+    "annotations": {
+      "title": null,
+      "read_only_hint": true,
+      "destructive_hint": null,
+      "idempotent_hint": null,
+      "open_world_hint": false
+    },
+    "meta": null
+  },
+  {
+    "name": "list_spectra",
+    "title": "List spectra in an MS file",
+    "description": "List the spectra in a local MS file as a compact index table.\n\nReads .mzML, .mzML.gz, .mgf and .imzML (imaging) files; the reader is\nchosen from the file extension.  For each spectrum reports its index,\nMS level, retention time, precursor m/z and peak count, so you can\nchoose which spectrum to hand to `load_spectrum` or search.\n\nUse it before `load_spectrum`: an MS/MS library search needs an MS2\nquery, and a real LC-MS run interleaves MS1 survey scans with the MS2\nspectra worth searching.  Filter with `ms_level=2` and `min_peaks` to\nsee the candidates without reading every spectrum's peaks.\n\nThe scan stops as soon as `max_spectra` matches are collected, and it\nnever reads more than the server's per-request spectrum budget\n(`MSMCP_MAX_SPECTRA`); the footer says which ceiling stopped it, so a\ntruncated listing never looks like a complete one.  It is slower than\n`load_mzml_summary` on large runs but far cheaper than loading every\nspectrum, and spectra the filter excludes are still counted.\n",
+    "input_schema": {
+      "properties": {
+        "file_path": {
+          "description": "Path to a local MS file (.mzML, .mzML.gz, .mgf or .imzML), absolute or relative to the server working directory.",
+          "minLength": 1,
+          "title": "File Path",
+          "type": "string"
+        },
+        "ms_level": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Only list spectra at this MS level (for example 2 for MS/MS). Leave unset to list every level.",
+          "title": "Ms Level"
+        },
+        "max_spectra": {
+          "default": 200,
+          "description": "Maximum number of spectra to list; the scan stops once this many match.",
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Max Spectra",
+          "type": "integer"
+        },
+        "min_peaks": {
+          "default": 0,
+          "description": "Only list spectra with at least this many peaks. 0 lists spectra with no peaks too.",
+          "minimum": 0,
+          "title": "Min Peaks",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "file_path"
+      ],
+      "title": "list_spectraArguments",
+      "type": "object"
+    },
+    "execution": null,
+    "output_schema": {
+      "properties": {
+        "result": {
+          "title": "Result",
+          "type": "string"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "list_spectraOutput",
+      "type": "object"
+    },
+    "icons": null,
+    "annotations": {
+      "title": null,
+      "read_only_hint": true,
+      "destructive_hint": null,
+      "idempotent_hint": null,
+      "open_world_hint": false
+    },
+    "meta": null
+  },
+  {
+    "name": "load_spectrum",
+    "title": "Load a spectrum as a server-side reference",
+    "description": "Load one spectrum server-side and return its data reference.\n\nThe peaks stay on the server: this returns a short ``ptr:spectrum:...``\nreference plus metadata and provenance, never the peak arrays.  Pass the\nreference to other tools (for example `compute_cosine` or\n`search_library`) so a large spectrum never has to be copied through the\nconversation.\n\nUse `summarise_reference` to read the spectrum's contents and\n`release_reference` when you are done with it.  References expire\nautomatically after a retention period.\n",
+    "input_schema": {
+      "properties": {
+        "file_path": {
+          "description": "Path to a local .mzML, .mzML.gz, .mgf or .imzML file. The reader is chosen from the file extension.",
+          "minLength": 1,
+          "title": "File Path",
+          "type": "string"
+        },
+        "spectrum_index": {
+          "default": 0,
+          "description": "Zero-based index of the spectrum to load. The index must be below the configured per-request spectrum limit.",
+          "maximum": 999,
+          "minimum": 0,
+          "title": "Spectrum Index",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "file_path"
+      ],
+      "title": "load_spectrumArguments",
+      "type": "object"
+    },
+    "execution": null,
+    "output_schema": {
+      "description": "Structured result of ``load_spectrum``.\n\nDescribes the registered spectrum in full without containing it: the peaks\nstay on the server behind ``reference``.",
+      "properties": {
+        "reference": {
+          "description": "Opaque server-side data reference.",
+          "title": "Reference",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Data kind held by the reference.",
+          "title": "Kind",
+          "type": "string"
+        },
+        "format": {
+          "description": "Detected source format, e.g. 'mzML'.",
+          "title": "Format",
+          "type": "string"
+        },
+        "backend": {
+          "description": "Reader that parsed the file.",
+          "title": "Backend",
+          "type": "string"
+        },
+        "source": {
+          "description": "Path the spectrum was read from.",
+          "title": "Source",
+          "type": "string"
+        },
+        "spectrum_index": {
+          "description": "Index of the spectrum within the source.",
+          "title": "Spectrum Index",
+          "type": "integer"
+        },
+        "ms_level": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "MS level, when the source states it.",
+          "title": "Ms Level"
+        },
+        "retention_time": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Retention time in minutes.",
+          "title": "Retention Time"
+        },
+        "precursor_mz": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Precursor m/z, when present.",
+          "title": "Precursor Mz"
+        },
+        "coordinate": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "(x, y, z) pixel for imaging sources; null otherwise.",
+          "title": "Coordinate"
+        },
+        "n_peaks": {
+          "description": "Number of peaks held server-side.",
+          "title": "N Peaks",
+          "type": "integer"
+        },
+        "mz_range": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "[min m/z, max m/z], or null.",
+          "title": "Mz Range"
+        },
+        "tic": {
+          "description": "Total ion current (sum of all intensities).",
+          "title": "Tic",
+          "type": "number"
+        },
+        "n_bytes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Size of the stored peak arrays.",
+          "title": "N Bytes"
+        },
+        "provenance": {
+          "additionalProperties": true,
+          "description": "Structured provenance for this derived object.",
+          "title": "Provenance",
+          "type": "object"
+        }
+      },
+      "required": [
+        "reference",
+        "kind",
+        "format",
+        "backend",
+        "source",
+        "spectrum_index",
+        "ms_level",
+        "retention_time",
+        "precursor_mz",
+        "coordinate",
+        "n_peaks",
+        "mz_range",
+        "tic",
+        "n_bytes",
+        "provenance"
+      ],
+      "title": "SpectrumReferenceResult",
+      "type": "object"
+    },
+    "icons": null,
+    "annotations": {
+      "title": null,
+      "read_only_hint": true,
+      "destructive_hint": null,
+      "idempotent_hint": null,
+      "open_world_hint": false
+    },
+    "meta": null
+  },
+  {
+    "name": "summarise_reference",
+    "title": "Summarise a referenced spectrum",
+    "description": "Summarise a spectrum held behind a data reference.\n\nReads the peaks from server memory: the source file is not opened\nagain, and nothing large is transferred.  Use it to inspect data you\nhave already loaded with `load_spectrum`.\n\nReports the same compact per-spectrum block as `load_mzml_summary`,\nfollowed by the provenance of the referenced object.\n",
+    "input_schema": {
+      "properties": {
+        "reference": {
+          "description": "A data reference returned by load_spectrum, e.g. 'ptr:spectrum:1a2b...'.",
+          "minLength": 1,
+          "title": "Reference",
+          "type": "string"
+        }
+      },
+      "required": [
+        "reference"
+      ],
+      "title": "summarise_referenceArguments",
+      "type": "object"
+    },
+    "execution": null,
+    "output_schema": {
+      "properties": {
+        "result": {
+          "title": "Result",
+          "type": "string"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "summarise_referenceOutput",
+      "type": "object"
+    },
+    "icons": null,
+    "annotations": {
+      "title": null,
+      "read_only_hint": true,
+      "destructive_hint": null,
+      "idempotent_hint": null,
+      "open_world_hint": false
+    },
+    "meta": null
+  },
+  {
+    "name": "release_reference",
+    "title": "Release a data reference",
+    "description": "Release a server-side data reference you no longer need.\n\nFrees the stored peaks immediately instead of waiting for the retention\nperiod to expire.  Releasing is idempotent: releasing an already-released\nor unknown reference reports that it was already gone rather than\nfailing, so a retry after a lost response is always safe.\n",
+    "input_schema": {
+      "properties": {
+        "reference": {
+          "description": "A data reference returned by load_spectrum, e.g. 'ptr:spectrum:1a2b...'.",
+          "minLength": 1,
+          "title": "Reference",
+          "type": "string"
+        }
+      },
+      "required": [
+        "reference"
+      ],
+      "title": "release_referenceArguments",
+      "type": "object"
+    },
+    "execution": null,
+    "output_schema": {
+      "properties": {
+        "result": {
+          "title": "Result",
+          "type": "string"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "release_referenceOutput",
+      "type": "object"
+    },
+    "icons": null,
+    "annotations": {
+      "title": null,
+      "read_only_hint": false,
+      "destructive_hint": null,
+      "idempotent_hint": true,
+      "open_world_hint": false
+    },
+    "meta": null
+  },
+  {
+    "name": "extract_chromatograms",
+    "title": "Extract scan-level chromatograms",
+    "description": "Return structured TIC, BPC and optional XIC traces from one bounded pass.\n\nTIC is the sum of reported intensities per selected scan. BPC is its\nmaximum reported intensity, or null for an empty scan. Each XIC sums\nall reported points in the inclusive m/z window. Each returned point\ncarries the scan's stated polarity, or null when unavailable.\nRepresentation is\nreported when the acquisition states centroid or profile; unknown\nrepresentation remains unknown and is called out in warnings. No\nsmoothing, normalization, alignment, baseline correction, blank\nsubtraction, or identification is performed. The tool scans the full\nsource to report acquisition counts and coverage; the optional RT range\nfilters returned trace points only.\n",
+    "input_schema": {
+      "properties": {
+        "file_path": {
+          "description": "Path to a local .mzML or .mzML.gz acquisition inside the configured allowed root.",
+          "minLength": 1,
+          "title": "File Path",
+          "type": "string"
+        },
+        "targets_mz": {
+          "anyOf": [
+            {
+              "items": {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              "maxItems": 20,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Finite positive target m/z values for simultaneous XICs; up to 20. Use an empty list or null for TIC and BPC only.",
+          "title": "Targets Mz"
+        },
+        "tolerance": {
+          "default": 5.0,
+          "description": "Half-width of each XIC window, in the selected tolerance_unit.",
+          "minimum": 0.0,
+          "title": "Tolerance",
+          "type": "number"
+        },
+        "tolerance_unit": {
+          "default": "ppm",
+          "description": "Tolerance units: ppm relative to target m/z, or absolute Da.",
+          "enum": [
+            "ppm",
+            "Da"
+          ],
+          "title": "Tolerance Unit",
+          "type": "string"
+        },
+        "ms_level": {
+          "default": 1,
+          "description": "MS level included in the chromatogram traces; defaults to MS1.",
+          "maximum": 10,
+          "minimum": 1,
+          "title": "Ms Level",
+          "type": "integer"
+        },
+        "retention_time_range_min": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional inclusive [start, end] retention-time range in minutes.",
+          "title": "Retention Time Range Min"
+        },
+        "max_spectra": {
+          "default": 10000,
+          "description": "Maximum source spectra to scan, across all MS levels and retention times; hard maximum 10000.",
+          "maximum": 10000,
+          "minimum": 1,
+          "title": "Max Spectra",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "file_path"
+      ],
+      "title": "extract_chromatogramsArguments",
+      "type": "object"
+    },
+    "execution": null,
+    "output_schema": {
+      "$defs": {
+        "ChromatogramAcquisition": {
+          "properties": {
+            "scanned_spectra": {
+              "title": "Scanned Spectra",
+              "type": "integer"
+            },
+            "spectrum_counts_by_ms_level": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "title": "Spectrum Counts By Ms Level",
+              "type": "object"
+            },
+            "selected_ms_level": {
+              "title": "Selected Ms Level",
+              "type": "integer"
+            },
+            "selected_ms_level_spectra": {
+              "title": "Selected Ms Level Spectra",
+              "type": "integer"
+            },
+            "retention_time_coverage_min": {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "title": "Retention Time Coverage Min",
+              "type": "object"
+            },
+            "retention_time_units": {
+              "title": "Retention Time Units",
+              "type": "string"
+            },
+            "representation_counts": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "title": "Representation Counts",
+              "type": "object"
+            },
+            "selected_representation_counts": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "title": "Selected Representation Counts",
+              "type": "object"
+            },
+            "polarity_counts": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "title": "Polarity Counts",
+              "type": "object"
+            },
+            "selected_polarity_counts": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "title": "Selected Polarity Counts",
+              "type": "object"
+            },
+            "empty_peak_array_spectra": {
+              "title": "Empty Peak Array Spectra",
+              "type": "integer"
+            },
+            "selected_empty_peak_array_spectra": {
+              "title": "Selected Empty Peak Array Spectra",
+              "type": "integer"
+            },
+            "missing_retention_time_spectra": {
+              "title": "Missing Retention Time Spectra",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "scanned_spectra",
+            "spectrum_counts_by_ms_level",
+            "selected_ms_level",
+            "selected_ms_level_spectra",
+            "retention_time_coverage_min",
+            "retention_time_units",
+            "representation_counts",
+            "selected_representation_counts",
+            "polarity_counts",
+            "selected_polarity_counts",
+            "empty_peak_array_spectra",
+            "selected_empty_peak_array_spectra",
+            "missing_retention_time_spectra"
+          ],
+          "title": "ChromatogramAcquisition",
+          "type": "object"
+        },
+        "ChromatogramCompleteness": {
+          "properties": {
+            "full_acquisition_processed": {
+              "title": "Full Acquisition Processed",
+              "type": "boolean"
+            },
+            "scanned_spectra": {
+              "title": "Scanned Spectra",
+              "type": "integer"
+            },
+            "max_spectra": {
+              "title": "Max Spectra",
+              "type": "integer"
+            },
+            "resource_limit_counts": {
+              "title": "Resource Limit Counts",
+              "type": "string"
+            },
+            "returned_points": {
+              "title": "Returned Points",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "full_acquisition_processed",
+            "scanned_spectra",
+            "max_spectra",
+            "resource_limit_counts",
+            "returned_points"
+          ],
+          "title": "ChromatogramCompleteness",
+          "type": "object"
+        },
+        "ChromatogramData": {
+          "properties": {
+            "native_scan_ids": {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "title": "Native Scan Ids",
+              "type": "array"
+            },
+            "scan_indices": {
+              "items": {
+                "type": "integer"
+              },
+              "title": "Scan Indices",
+              "type": "array"
+            },
+            "scan_ordinals": {
+              "items": {
+                "type": "integer"
+              },
+              "title": "Scan Ordinals",
+              "type": "array"
+            },
+            "source_spectrum_indices": {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "title": "Source Spectrum Indices",
+              "type": "array"
+            },
+            "polarities": {
+              "items": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "positive",
+                      "negative"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "title": "Polarities",
+              "type": "array"
+            },
+            "retention_times_min": {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "title": "Retention Times Min",
+              "type": "array"
+            },
+            "tic_intensities": {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "title": "Tic Intensities",
+              "type": "array"
+            },
+            "bpc_intensities": {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "title": "Bpc Intensities",
+              "type": "array"
+            },
+            "xic": {
+              "items": {
+                "$ref": "#/$defs/ChromatogramXIC"
+              },
+              "title": "Xic",
+              "type": "array"
+            },
+            "mz_units": {
+              "default": "m/z",
+              "title": "Mz Units",
+              "type": "string"
+            },
+            "retention_time_units": {
+              "default": "minutes",
+              "title": "Retention Time Units",
+              "type": "string"
+            },
+            "intensity_units": {
+              "default": "input_defined",
+              "title": "Intensity Units",
+              "type": "string"
+            }
+          },
+          "required": [
+            "native_scan_ids",
+            "scan_indices",
+            "scan_ordinals",
+            "source_spectrum_indices",
+            "polarities",
+            "retention_times_min",
+            "tic_intensities",
+            "bpc_intensities",
+            "xic"
+          ],
+          "title": "ChromatogramData",
+          "type": "object"
+        },
+        "ChromatogramParameters": {
+          "properties": {
+            "targets_mz": {
+              "items": {
+                "type": "number"
+              },
+              "title": "Targets Mz",
+              "type": "array"
+            },
+            "tolerance": {
+              "title": "Tolerance",
+              "type": "number"
+            },
+            "tolerance_unit": {
+              "enum": [
+                "ppm",
+                "Da"
+              ],
+              "title": "Tolerance Unit",
+              "type": "string"
+            },
+            "xic_aggregation": {
+              "title": "Xic Aggregation",
+              "type": "string"
+            },
+            "tic_calculation": {
+              "title": "Tic Calculation",
+              "type": "string"
+            },
+            "bpc_calculation": {
+              "title": "Bpc Calculation",
+              "type": "string"
+            },
+            "ms_level": {
+              "title": "Ms Level",
+              "type": "integer"
+            },
+            "retention_time_range_min": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Retention Time Range Min"
+            },
+            "max_spectra": {
+              "title": "Max Spectra",
+              "type": "integer"
+            },
+            "resource_limit_counts": {
+              "title": "Resource Limit Counts",
+              "type": "string"
+            }
+          },
+          "required": [
+            "targets_mz",
+            "tolerance",
+            "tolerance_unit",
+            "xic_aggregation",
+            "tic_calculation",
+            "bpc_calculation",
+            "ms_level",
+            "retention_time_range_min",
+            "max_spectra",
+            "resource_limit_counts"
+          ],
+          "title": "ChromatogramParameters",
+          "type": "object"
+        },
+        "ChromatogramSource": {
+          "properties": {
+            "file_path": {
+              "title": "File Path",
+              "type": "string"
+            },
+            "format": {
+              "title": "Format",
+              "type": "string"
+            },
+            "reader_backend": {
+              "title": "Reader Backend",
+              "type": "string"
+            },
+            "size_bytes": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Size Bytes"
+            },
+            "digest": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Digest"
+            }
+          },
+          "required": [
+            "file_path",
+            "format",
+            "reader_backend",
+            "size_bytes",
+            "digest"
+          ],
+          "title": "ChromatogramSource",
+          "type": "object"
+        },
+        "ChromatogramXIC": {
+          "properties": {
+            "target_mz": {
+              "title": "Target Mz",
+              "type": "number"
+            },
+            "lower_mz_inclusive": {
+              "title": "Lower Mz Inclusive",
+              "type": "number"
+            },
+            "upper_mz_inclusive": {
+              "title": "Upper Mz Inclusive",
+              "type": "number"
+            },
+            "aggregation": {
+              "title": "Aggregation",
+              "type": "string"
+            },
+            "intensity_units": {
+              "title": "Intensity Units",
+              "type": "string"
+            },
+            "intensities": {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "title": "Intensities",
+              "type": "array"
+            }
+          },
+          "required": [
+            "target_mz",
+            "lower_mz_inclusive",
+            "upper_mz_inclusive",
+            "aggregation",
+            "intensity_units",
+            "intensities"
+          ],
+          "title": "ChromatogramXIC",
+          "type": "object"
+        },
+        "MissingScanObservation": {
+          "properties": {
+            "scan_ordinal": {
+              "title": "Scan Ordinal",
+              "type": "integer"
+            },
+            "source_spectrum_index": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Spectrum Index"
+            },
+            "ms_level": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ms Level"
+            },
+            "retention_time_min": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Retention Time Min"
+            },
+            "reason": {
+              "title": "Reason",
+              "type": "string"
+            }
+          },
+          "required": [
+            "scan_ordinal",
+            "source_spectrum_index",
+            "ms_level",
+            "retention_time_min",
+            "reason"
+          ],
+          "title": "MissingScanObservation",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/ChromatogramSource"
+        },
+        "acquisition": {
+          "$ref": "#/$defs/ChromatogramAcquisition"
+        },
+        "chromatograms": {
+          "$ref": "#/$defs/ChromatogramData"
+        },
+        "extraction_parameters": {
+          "$ref": "#/$defs/ChromatogramParameters"
+        },
+        "completeness": {
+          "$ref": "#/$defs/ChromatogramCompleteness"
+        },
+        "missing_observations": {
+          "items": {
+            "$ref": "#/$defs/MissingScanObservation"
+          },
+          "title": "Missing Observations",
+          "type": "array"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "provenance": {
+          "additionalProperties": true,
+          "title": "Provenance",
+          "type": "object"
+        }
+      },
+      "required": [
+        "schema_version",
+        "source",
+        "acquisition",
+        "chromatograms",
+        "extraction_parameters",
+        "completeness",
+        "missing_observations",
+        "warnings",
+        "provenance"
+      ],
+      "title": "ChromatogramToolResult",
+      "type": "object"
+    },
+    "icons": null,
+    "annotations": {
+      "title": null,
+      "read_only_hint": true,
+      "destructive_hint": null,
+      "idempotent_hint": null,
+      "open_world_hint": false
+    },
+    "meta": null
+  },
+  {
+    "name": "predict_adduct_offset",
+    "title": "Predict Adduct Mass Offset",
+    "description": "Return the exact mass shift that a standard ionisation adduct adds to a neutral molecule.\n\nUse this to convert a neutral monoisotopic mass into the expected\nprecursor m/z for a given ionisation pathway, or to check whether an\nadduct assignment is physically plausible.\n\nReturns the adduct polarity, charge state, exact mass shift in daltons\n(Da), and the formula for the resulting m/z offset.  Note that for a\ncharge state of 1 the reported shift is the direct m/z offset, whereas\nfor higher charge states the shift must be divided by the absolute\ncharge (the returned offset formula already shows this).\n\nOnly canonical adduct notations from a fixed table are accepted (e.g.\n'[M+H]+', '[M+Na]+', '[M+NH4]+', '[M+H-H2O]+', '[M+2H]2+', '[M-H]-',\n'[M+Cl]-', '[M+HCOO]-'); matching is case-insensitive.  Any other\nstring is rejected and the supported adducts are listed, so do not\ninvent an adduct that is not offered there.  The adduct string must be\nat least 3 characters long.\n",
+    "input_schema": {
+      "properties": {
+        "adduct_string": {
+          "description": "Adduct notation, e.g. '[M+H]+', '[M-H]-' or '[M+Na]+'. Must be one of the instrument-standard adducts.",
+          "minLength": 3,
+          "title": "Adduct String",
+          "type": "string"
+        }
+      },
+      "required": [
+        "adduct_string"
+      ],
+      "title": "predict_adduct_offsetArguments",
+      "type": "object"
+    },
+    "execution": null,
+    "output_schema": {
+      "properties": {
+        "result": {
+          "title": "Result",
+          "type": "string"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "predict_adduct_offsetOutput",
+      "type": "object"
+    },
+    "icons": null,
+    "annotations": {
+      "title": null,
+      "read_only_hint": true,
+      "destructive_hint": null,
+      "idempotent_hint": null,
+      "open_world_hint": false
+    },
+    "meta": null
+  },
+  {
+    "name": "annotate_isotopes",
+    "title": "Annotate Isotope Pattern",
+    "description": "Predict the theoretical isotope pattern (M, M+1, ...) of a compound.\n\nUse this to obtain isotopologue masses and relative abundances, for\nexample to check a measured isotope envelope against a proposed\nmolecular formula or to confirm a monoisotopic mass.\n\nReturns the monoisotopic mass in daltons (Da) and a Markdown table\ngiving the theoretical mass and relative abundance of each isotopologue\nfrom M up to M+(isotopologues-1), normalised so that the monoisotopic\npeak is 1.0000.  The envelope is the exact multinomial expansion of each\nelement's isotopes, so it handles the full isotope ladder: a chlorine-\nor bromine-rich formula carries its signal in M+2 and M+4 (Cl and Br\nhave no single-neutron isotope), while ordinary C/H/N/O compounds\nconcentrate it in M+1 and M+2.  Raise `isotopologues` to reveal the\nhigher peaks a halogen-rich formula carries.\n\nPass a chemical formula as the identifier by default (for example\n'C6H12O6'); set is_smiles=True only when the identifier is a SMILES\nstring.  SMILES resolution requires the optional RDKit dependency: if\nit is missing, an error is returned and the formula should be supplied\ninstead.  The identifier must be at least one character long, and only\nelements with tabulated isotope data are supported (C, H, N, O, S, P,\nF, Cl, Br, I, Na, K, Si, Fe, Se) - any other element returns an error.\nFormulae are limited to 10,000 total atoms so the exact expansion remains\nbounded for the small-molecule use case.\n",
+    "input_schema": {
+      "properties": {
+        "identifier": {
+          "description": "Chemical formula (e.g. 'C6H12O6') or SMILES string, depending on is_smiles; maximum 4096 characters.",
+          "maxLength": 4096,
+          "minLength": 1,
+          "title": "Identifier",
+          "type": "string"
+        },
+        "is_smiles": {
+          "default": false,
+          "description": "Set to True when identifier is a SMILES string; leave False when it is a chemical formula.",
+          "title": "Is Smiles",
+          "type": "boolean"
+        },
+        "isotopologues": {
+          "default": 3,
+          "description": "How many isotopologue rows to return, from M up to M+(isotopologues-1). Default 3 (M, M+1, M+2). Raise it for halogen-rich formulas, whose diagnostic M+4 peak needs more rows.",
+          "maximum": 10,
+          "minimum": 1,
+          "title": "Isotopologues",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "identifier"
+      ],
+      "title": "annotate_isotopesArguments",
+      "type": "object"
+    },
+    "execution": null,
+    "output_schema": {
+      "properties": {
+        "result": {
+          "title": "Result",
+          "type": "string"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "annotate_isotopesOutput",
+      "type": "object"
+    },
+    "icons": null,
+    "annotations": {
+      "title": null,
+      "read_only_hint": true,
+      "destructive_hint": null,
+      "idempotent_hint": null,
+      "open_world_hint": false
+    },
+    "meta": null
+  },
+  {
+    "name": "validate_precursor",
+    "title": "Validate Precursor Mass",
+    "description": "Check whether an observed precursor mass matches a theoretical mass.\n\nUse this before interpreting an MS/MS spectrum to confirm that the\nprecursor ion is physically consistent with the hypothesised compound,\nor to discriminate between candidate molecular formulas, adducts or\ncharge states.\n\nBoth masses must be given in daltons (Da) and must be greater than 0;\nthe theoretical mass is the exact monoisotopic mass of the neutral (or\nalready ionised) species being compared, and the experimental mass is\nthe observed precursor m/z.\n\nReturns the mass error together with a PASSED or REJECTED verdict.  The\nacceptance window is not a fixed number: it comes from the instrument\nclass named by `instrument_class` (default 'generic', the 5.0 ppm gate\nMSMCP has used since v1.0).  Accurate-mass classes express the window in\nppm; unit-resolution classes (ion_trap, triple_quad) use a dalton\nwindow, because a ppm gate is meaningless on an instrument that cannot\nresolve fractions of a nominal mass.  The class and the window actually\napplied are stated in the result, so a verdict is never separated from\nthe assumption behind it.  A rejection means the observation is\ninconsistent with the hypothesis under that assumption, and the formula,\nadduct assignment or instrument calibration should be reconsidered.\n",
+    "input_schema": {
+      "properties": {
+        "theoretical_mass": {
+          "description": "Finite, positive exact monoisotopic mass of the hypothesised compound (Da).",
+          "exclusiveMinimum": 0.0,
+          "title": "Theoretical Mass",
+          "type": "number"
+        },
+        "experimental_mass": {
+          "description": "Finite, positive experimentally observed precursor m/z (Da).",
+          "exclusiveMinimum": 0.0,
+          "title": "Experimental Mass",
+          "type": "number"
+        },
+        "instrument_class": {
+          "anyOf": [
+            {
+              "enum": [
+                "generic",
+                "orbitrap",
+                "tof",
+                "ion_trap",
+                "triple_quad"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Instrument class whose documented default precursor tolerance is applied (default 'generic' — MSMCP's v1.0 5.0 ppm gate).  Accurate-mass classes tolerate ppm; unit-resolution classes (ion_trap, triple_quad) use a Da window.  One of: generic, ion_trap, orbitrap, tof, triple_quad.",
+          "title": "Instrument Class"
+        }
+      },
+      "required": [
+        "theoretical_mass",
+        "experimental_mass"
+      ],
+      "title": "validate_precursorArguments",
+      "type": "object"
+    },
+    "execution": null,
+    "output_schema": {
+      "properties": {
+        "result": {
+          "title": "Result",
+          "type": "string"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "validate_precursorOutput",
+      "type": "object"
+    },
+    "icons": null,
+    "annotations": {
+      "title": null,
+      "read_only_hint": true,
+      "destructive_hint": null,
+      "idempotent_hint": null,
+      "open_world_hint": false
+    },
+    "meta": null
+  },
+  {
+    "name": "compute_cosine",
+    "title": "Compute MS/MS Cosine Similarity",
+    "description": "Score the similarity between an experimental MS/MS spectrum and a reference spectrum.\n\nUse this for spectral library matching, to rank candidate reference\nspectra against an unknown query spectrum, or to judge how well a\nproposed structure explains the observed fragmentation.\n\nEach side comes from exactly one source.  Either pass peaks directly as\n[[m/z, intensity], ...] lists in daltons — each list needs at least one\npeak, intensities must be non-negative, and intensities should be on a\nconsistent scale within each spectrum — or pass a `query_reference` /\n`reference_reference` naming data already loaded server-side, which\nkeeps a large spectrum out of the conversation.  Supplying both sources\nfor the same side, or neither, is rejected.\n\nReturns a cosine score between 0 and 1, the number of matched peaks and\nthe percentage of query peaks matched, and a list of the most intense\nunmatched query peaks, which point at structural differences to\ninvestigate.  The score is the dot product of the matched peak\nintensities normalised over **all** peaks in each spectrum, so 1.0 means\nthe matched peaks account for all of the intensity in both spectra —\nnot that the two spectra are identical; a spectrum that shares a single\npeak with the query scores near zero, not 1.0.  The response names the\nsource of each side, so a score is traceable back to where its peaks\ncame from.\n\nWith scoring_method='classical' (the default) query peaks are matched\nto the closest unused reference peak within ms2_tolerance Da (greedy,\none-to-one), so the tolerance must be greater than 0 and at most 1.0.\nWhen ms2_tolerance is left unset it is the documented default for the\nnamed `instrument_class` (0.02 Da for 'generic'); the response states\nthe window applied and where it came from.\nWith 'dreams' or 'lsm-ms2' the comparison happens in whole-spectrum\nembedding space instead and no peak-matching counts are reported;\nthose methods need the corresponding foundation model to be installed,\notherwise the tool returns an error rather than a score.\n",
+    "input_schema": {
+      "properties": {
+        "query_peaks": {
+          "anyOf": [
+            {
+              "items": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Query spectrum peaks as [[m/z, intensity], ...]; m/z must be finite and positive, and intensity finite and non-negative. Provide this or query_reference, not both.",
+          "title": "Query Peaks"
+        },
+        "query_reference": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A reference from load_spectrum (or a stored peak list), used as the query instead of inline peaks.  Provide this or query_peaks, not both.",
+          "title": "Query Reference"
+        },
+        "reference_peaks": {
+          "anyOf": [
+            {
+              "items": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Reference spectrum peaks as [[m/z, intensity], ...]; m/z must be finite and positive, and intensity finite and non-negative. Provide this or reference_reference, not both.",
+          "title": "Reference Peaks"
+        },
+        "reference_reference": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A reference from load_spectrum (or a stored peak list), used as the reference spectrum instead of inline peaks.  Provide this or reference_peaks, not both.",
+          "title": "Reference Reference"
+        },
+        "ms2_tolerance": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "maximum": 1.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "m/z matching tolerance in Da; must be greater than 0 and at most 1.0.  Leave unset to use the default for the instrument class (0.02 Da for 'generic').",
+          "title": "Ms2 Tolerance"
+        },
+        "instrument_class": {
+          "anyOf": [
+            {
+              "enum": [
+                "generic",
+                "orbitrap",
+                "tof",
+                "ion_trap",
+                "triple_quad"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Instrument class whose documented default m/z window is used when ms2_tolerance is not given (default 'generic').  One of: generic, ion_trap, orbitrap, tof, triple_quad.",
+          "title": "Instrument Class"
+        },
+        "scoring_method": {
+          "default": "classical",
+          "description": "Scoring method: 'classical' performs greedy one-to-one peak matching within ms2_tolerance, while 'dreams' and 'lsm-ms2' compare whole-spectrum embeddings from the corresponding foundation model.",
+          "enum": [
+            "classical",
+            "dreams",
+            "lsm-ms2"
+          ],
+          "title": "Scoring Method",
+          "type": "string"
+        }
+      },
+      "title": "compute_cosineArguments",
+      "type": "object"
+    },
+    "execution": null,
+    "output_schema": {
+      "properties": {
+        "result": {
+          "title": "Result",
+          "type": "string"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "compute_cosineOutput",
+      "type": "object"
+    },
+    "icons": null,
+    "annotations": {
+      "title": null,
+      "read_only_hint": true,
+      "destructive_hint": null,
+      "idempotent_hint": null,
+      "open_world_hint": false
+    },
+    "meta": null
+  },
+  {
+    "name": "search_library",
+    "title": "Search a spectral library (async)",
+    "description": "Start a background spectral-library search and return a job ID.\n\nThe **library** is read for real when `database_file` names a format\nMSMCP can read (MSP/NIST-style text and MGF, `.msp` / `.msp.gz` / `.mgf` / `.mgf.gz`).  The path is\nresolved through the same security boundary as acquisitions — allowed\nroot, size limit, read-only — so a library outside the allowed root, a\nmissing file or an unsupported format is refused before a job is\ndispatched.  A path with no reader falls back to a deterministic\nsynthetic library, and the report says which path was used; never treat\na synthetic-library hit as a compound identification.\n\nThe **query** spectrum can be real: pass `spectrum_reference` from\n`load_spectrum` (peaks already server-side), or `experimental_file` with\n`spectrum_index` to read one from disk.  The reply names the spectrum it\nused — index, MS level, retention time, precursor m/z and peak count —\nbecause the first spectrum of a real LC/MS run is normally an MS1 survey\nscan.  An MS1 (or non-MS2) query is refused: it is not evidence for an\nMS2 library match.  A spectrum with no peaks is refused rather than\ndispatched.  The chunked scan and similarity ranking use the selected\nlibrary in every case.\n\nWhen the query is MS2 and states a precursor m/z, the declared\ninstrument-class precursor tolerance is applied before ranking;\ncandidates whose stated polarity, charge or adduct conflicts with the\nquery are also excluded.  Candidates that omit a field remain ranked but\nare labelled *unknown*, and a direct peak-list query (no acquisition\ncontext) is reported as fragment-only exploratory.  The report and\nprovenance record the eligibility counts, exclusion reasons and only the\ntolerances actually applied.  Significance is uncalibrated; no\nstatistical error-rate claim is made.\n\nThe MS2 m/z matching window comes from the named `instrument_class`\n(default 'generic'). The class and matching window are stated in the\nreport and recorded in provenance. No significance threshold is applied,\nand ranked scores are not identification probabilities or error rates.\nScoring requires finite positive m/z coordinates and finite\nnon-negative intensities; non-positive coordinates and signed\nbaseline-corrected peaks are rejected, not clipped or scored as cosine\nsimilarity.\n\nReturns immediately with a job ID, because the scan takes far longer\nthan a request timeout.  Poll `check_search_status` with that ID to\ncollect the report.  This tool does not return results directly.\n",
+    "input_schema": {
+      "properties": {
+        "database_file": {
+          "description": "Path to the spectral library.  MSP/NIST-style text (.msp, .msp.gz) and MGF (.mgf, .mgf.gz) are read from disk through the security boundary; any other path falls back to a labelled synthetic library.",
+          "minLength": 1,
+          "title": "Database File",
+          "type": "string"
+        },
+        "experimental_file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Path to the experimental spectrum file, read for real through the ingestion layer.  Provide this or spectrum_reference, not both.",
+          "title": "Experimental File"
+        },
+        "spectrum_index": {
+          "anyOf": [
+            {
+              "maximum": 999,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Zero-based index of the spectrum to search inside experimental_file (default 0).  A real LC-MS/MS file starts with an MS1 survey scan, so check which spectrum you want with load_mzml_summary or load_spectrum first — the reply always names the spectrum that was used.",
+          "title": "Spectrum Index"
+        },
+        "spectrum_reference": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A spectrum reference from load_spectrum, used as the query instead of a file path.  Provide this or experimental_file, not both.",
+          "title": "Spectrum Reference"
+        },
+        "scoring_method": {
+          "default": "classical",
+          "description": "'classical' is greedy peak matching; 'dreams' and 'lsm-ms2' are real foundation-model embeddings, which need the optional ML backend installed or the job fails.",
+          "enum": [
+            "classical",
+            "dreams",
+            "lsm-ms2"
+          ],
+          "title": "Scoring Method",
+          "type": "string"
+        },
+        "chunk_size": {
+          "default": 2000,
+          "description": "Spectra read per database batch.  Affects only memory and I/O batching, not the result.",
+          "maximum": 10000,
+          "minimum": 100,
+          "title": "Chunk Size",
+          "type": "integer"
+        },
+        "instrument_class": {
+          "anyOf": [
+            {
+              "enum": [
+                "generic",
+                "orbitrap",
+                "tof",
+                "ion_trap",
+                "triple_quad"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Instrument class whose documented defaults set the experimental thresholds this scan applies — the MS2 m/z window (default 'generic').  The class and the values used are recorded in the report and its provenance.  One of: generic, ion_trap, orbitrap, tof, triple_quad.",
+          "title": "Instrument Class"
+        }
+      },
+      "required": [
+        "database_file"
+      ],
+      "title": "search_libraryArguments",
+      "type": "object"
+    },
+    "execution": null,
+    "output_schema": {
+      "properties": {
+        "result": {
+          "title": "Result",
+          "type": "string"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "search_libraryOutput",
+      "type": "object"
+    },
+    "icons": null,
+    "annotations": {
+      "title": null,
+      "read_only_hint": true,
+      "destructive_hint": null,
+      "idempotent_hint": null,
+      "open_world_hint": false
+    },
+    "meta": null
+  },
+  {
+    "name": "check_search_status",
+    "title": "Check search status",
+    "description": "Fetch the current state, or the report, of a background search.\n\nPass the job ID returned by `search_library`.  While the job is queued\nor scanning this returns a short status line, so poll again after a\npause.\n\nThe finished report is delivered **once**: the first poll after the job\ncompletes returns the full Markdown report, and any later poll returns\na short digest of it (library size, hit count, top hit) so that a client\nwhich keeps polling does not pull the whole report into its context\nagain.  Pass `full_report=True` to get the report itself back when it is\nno longer in context.  A failed or cancelled job is reported as such on\nevery poll.\n\nA job the server no longer knows about (for example after a restart)\nis reported as failed rather than as pending, so it is always safe to\nkeep polling.\n",
+    "input_schema": {
+      "properties": {
+        "job_id": {
+          "description": "The job ID returned by search_library.",
+          "minLength": 1,
+          "title": "Job Id",
+          "type": "string"
+        },
+        "full_report": {
+          "default": false,
+          "description": "Request the whole report again after it has already been returned once.  Leave it false to keep repeat polls small.",
+          "title": "Full Report",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "job_id"
+      ],
+      "title": "check_search_statusArguments",
+      "type": "object"
+    },
+    "execution": null,
+    "output_schema": {
+      "properties": {
+        "result": {
+          "title": "Result",
+          "type": "string"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "check_search_statusOutput",
+      "type": "object"
+    },
+    "icons": null,
+    "annotations": {
+      "title": null,
+      "read_only_hint": true,
+      "destructive_hint": null,
+      "idempotent_hint": null,
+      "open_world_hint": false
+    },
+    "meta": null
+  },
+  {
+    "name": "cancel_search",
+    "title": "Cancel a search",
+    "description": "Abort a queued or running background search.\n\nPass the job ID returned by `search_library`.  A job that has already\nfinished is reported as such rather than cancelled.  A scan that has\nalready started may not stop instantly, but its partial work is\ndiscarded instead of being returned.\n\nPoll `check_search_status` afterwards to confirm the job reached the\ncancelled state.\n",
+    "input_schema": {
+      "properties": {
+        "job_id": {
+          "description": "The job ID returned by search_library.",
+          "minLength": 1,
+          "title": "Job Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "job_id"
+      ],
+      "title": "cancel_searchArguments",
+      "type": "object"
+    },
+    "execution": null,
+    "output_schema": {
+      "properties": {
+        "result": {
+          "title": "Result",
+          "type": "string"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "cancel_searchOutput",
+      "type": "object"
+    },
+    "icons": null,
+    "annotations": {
+      "title": null,
+      "read_only_hint": false,
+      "destructive_hint": null,
+      "idempotent_hint": true,
+      "open_world_hint": false
+    },
+    "meta": null
+  },
+  {
+    "name": "generate_qc_summary",
+    "title": "Generate a QC summary",
+    "description": "Report quality-control metrics for a local MS acquisition.\n\nReads .mzML, .mzML.gz, .mgf and .imzML (imaging) files; the reader is\nchosen from the file extension. Scans at most the configured per-request\nspectrum limit and reports when full-acquisition coverage is unconfirmed.\nMetrics include total-ion-current counts, per-spectrum peak density, an\n*estimated* signal-to-noise ratio (base peak / median positive\nintensity, a transparent proxy rather than a calibrated instrument\nSNR), and the prevalence of ten diagnostic immonium and oxonium\nfragment ions.\n\nThe two experimental thresholds — the diagnostic-ion matching window\nand the SNR bands used for the low/high prevalence rows — come from the\nnamed `instrument_class` (default 'generic': +/-0.02 Da and 5/20 SNR,\nMSMCP's v1.0 values), and the values actually applied are stated in the\nreport, so a QC verdict is never separated from the assumption behind\nit.\n\nUse it to judge whether an acquisition is worth searching. Unlike\n`load_mzml_summary`, it may scan up to the configured spectrum limit;\nit never presents a capped summary as covering the full acquisition.\n",
+    "input_schema": {
+      "properties": {
+        "file_path": {
+          "description": "Path to a local MS file (.mzML, .mzML.gz, .mgf or .imzML), absolute or relative to the server working directory.",
+          "minLength": 1,
+          "title": "File Path",
+          "type": "string"
+        },
+        "instrument_class": {
+          "anyOf": [
+            {
+              "enum": [
+                "generic",
+                "orbitrap",
+                "tof",
+                "ion_trap",
+                "triple_quad"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Instrument class whose documented defaults set the diagnostic-ion matching window and the SNR reporting bands (default 'generic': ±0.02 Da, 5/20 SNR).  One of: generic, ion_trap, orbitrap, tof, triple_quad.",
+          "title": "Instrument Class"
+        }
+      },
+      "required": [
+        "file_path"
+      ],
+      "title": "generate_qc_summaryArguments",
+      "type": "object"
+    },
+    "execution": null,
+    "output_schema": {
+      "properties": {
+        "result": {
+          "title": "Result",
+          "type": "string"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "generate_qc_summaryOutput",
+      "type": "object"
+    },
+    "icons": null,
+    "annotations": {
+      "title": null,
+      "read_only_hint": true,
+      "destructive_hint": null,
+      "idempotent_hint": null,
+      "open_world_hint": false
+    },
+    "meta": null
+  },
+  {
+    "name": "ping",
+    "title": "Server health check",
+    "description": "Check that the core server is running.\n\nTakes no arguments. The optional `massflow` distribution is reported\nfrom installed metadata without importing it; absence is normal for\ncore mzML/MGF installs. These fields do not verify imzML compatibility\nor the separate analytical MassFlow engine. Backend import failures\nare reported when reading imzML, with imaging-extra install guidance.\n",
+    "input_schema": {
+      "properties": {},
+      "title": "pingArguments",
+      "type": "object"
+    },
+    "execution": null,
+    "output_schema": {
+      "description": "Response schema for the diagnostic ping tool.",
+      "properties": {
+        "status": {
+          "description": "'ok' when the server is operational.",
+          "title": "Status",
+          "type": "string"
+        },
+        "message": {
+          "description": "Human-readable status message.",
+          "title": "Message",
+          "type": "string"
+        },
+        "massflow_available": {
+          "description": "True when `massflow` distribution metadata is installed; does not verify the optional imzML backend or analytical MassFlow engine.",
+          "title": "Massflow Available",
+          "type": "boolean"
+        },
+        "massflow_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Installed `massflow` distribution version, or null when absent.",
+          "title": "Massflow Version"
+        }
+      },
+      "required": [
+        "status",
+        "message",
+        "massflow_available"
+      ],
+      "title": "PingResponse",
+      "type": "object"
+    },
+    "icons": null,
+    "annotations": {
+      "title": null,
+      "read_only_hint": true,
+      "destructive_hint": null,
+      "idempotent_hint": null,
+      "open_world_hint": false
+    },
+    "meta": null
+  }
+]

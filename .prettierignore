@@ -2,3 +2,6 @@ dist/
 node_modules/
 .astro/
 package-lock.json
+
+# Captured responses retain the tool serialization
+examples/results/*.json

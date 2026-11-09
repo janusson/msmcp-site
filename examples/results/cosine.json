@@ -1,0 +1,3 @@
+{
+  "result": "Cosine Similarity: **1.0000**\n\nScoring method: classical (greedy peak matching)\nQuery source: inline peak list (4 peaks)\nReference source: inline peak list (4 peaks)\nMatched: 4 / 4 query peaks (100.0%)\nReference peaks utilised: 4 / 4 (100.0%)\nMS/MS tolerance: ±0.020 Da (instrument class 'generic')\n\nAll query peaks were matched to the reference spectrum."
+}
