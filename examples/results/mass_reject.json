@@ -1,0 +1,3 @@
+{
+  "result": "VALIDATION REJECTED\nTheoretical mass:  195.087676 Da\nExperimental mass:  195.090000 Da\nMass error:         11.91 ppm\nInstrument class:  orbitrap (precursor tolerance 5.0 ppm)\n\nThe mass error exceeds the 5.0 ppm acceptance threshold. The observed spectrum is **physically invalid** for the hypothesised compound under the orbitrap class assumption.  Reconsider the molecular formula, adduct assignment, or instrument calibration."
+}

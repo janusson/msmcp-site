@@ -1,0 +1,3 @@
+{
+  "result": "VALIDATION PASSED\nTheoretical mass:  195.087676 Da\nExperimental mass:  195.087700 Da\nMass error:         0.12 ppm\nInstrument class:  orbitrap (precursor tolerance 5.0 ppm)\n\nThe observed precursor is consistent with the hypothesised compound (≤ 5.0 ppm threshold)."
+}

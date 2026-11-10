@@ -26,7 +26,7 @@ portal, not a blog, and not a marketing site.
 | Framework | **Astro 7** (static output)                | The same framework as the personal site, so the toolchain, conventions and deployment shape are already familiar. Static output means no runtime, no server, no database.       |
 | Styling   | **Tailwind CSS 4** via `@tailwindcss/vite` | Tokens live in `src/styles/global.css` under `@theme`, exactly as on the personal site.                                                                                         |
 | Fonts     | Inter + Source Code Pro (Google Fonts CDN) | Inter for prose; Source Code Pro carries a real 600 for the mono labels, where JetBrains Mono shipped 400/500 and the browser synthesised the bold. `preconnect` on both hosts. |
-| Scripts   | None                                       | No client-side JavaScript is shipped. The mobile layout wraps instead of hiding behind a drawer, and the figures are CSS positioned from data.                                  |
+| Scripts   | None                                       | No client-side JavaScript is shipped. The mobile layout wraps instead of hiding behind a drawer, and the figures are static SVGs generated from the example inputs and outputs. |
 
 Nothing else. No analytics, no trackers, no cookie banner, no newsletter, no
 backend, no contact form, no separate documentation engine.
@@ -57,9 +57,8 @@ things that break silently on a static page making claims about software:
 - exactly one `<h1>`, a `lang`, and a meta description;
 - **every in-page `#anchor` resolves** — a dead nav link is the most likely
   regression on a one-page site;
-- **all fourteen MSMCP tool names still appear**, and the tools reference has
-  exactly one `data-tool` row per tool with a call in it, so a renamed or added
-  tool cannot drift the page out of sync with the server;
+- **all fifteen MSMCP tool names still appear**, and the tools reference has
+  exactly one `data-tool` row per tool with a call in it, so changes to the checked list are visible; compare that list with the release schemas when upgrading;
 - the hero phrasing and the "candidates, not identifications" framing are intact;
 - no `http://` links, `target="_blank"` implies `rel="noopener"`, and no external
   link points outside a small allowlist of trusted hosts;
@@ -99,7 +98,7 @@ change, render the page and look at it.** It was checked in headless Chromium at
 │   └── verify-build.mjs      # post-build contract checks
 ├── src/
 │   ├── components/
-│   │   ├── IsotopeFigure.astro   # glucose isotope envelope, from real tool output
+│   │   ├── IsotopeFigure.astro   # legacy component (not used on this page)
 │   │   ├── ReferenceFlow.astro   # the data-reference mechanism, drawn
 │   │   ├── SiteFooter.astro
 │   │   └── SiteHeader.astro
@@ -220,37 +219,22 @@ Settings → Pages.
 Where the load-bearing content lives, and what has to be re-checked when MSMCP
 changes:
 
-| Content                                          | Lives in                                                                 | Re-check when                                                                                                                                                             |
-| ------------------------------------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The transcribed workflow, hit table, and timings | `src/pages/index.astro` — the `hits` array and the transcript markup     | `search_library` scoring, the report format, or the null model changes. The numbers came from a single recorded run (see below); they are a record, not a live benchmark. |
-| The isotope envelope                             | `src/components/IsotopeFigure.astro` — the `peaks` array                 | `annotate_isotopes` maths changes. Re-run the tool and paste its output.                                                                                                  |
-| The tool list (13 names)                         | `src/pages/index.astro` — `tools`; guarded by `scripts/verify-build.mjs` | A tool is added, renamed or removed in `src/msmcp/tools/`.                                                                                                                |
-| Install commands                                 | `src/pages/index.astro` — `installSnippet`                               | The distribution story changes (PyPI, `server.json`, a container).                                                                                                        |
-| Document links                                   | `src/pages/index.astro` — `docs`                                         | A file is renamed or moved in the MSMCP repository.                                                                                                                       |
+| Content                                    | Lives in                                                                     | Re-check when                                                                    |
+| ------------------------------------------ | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| The example explanations and output values | `src/pages/index.astro` and `examples/`                                      | the released tool contracts or reproduction inputs change.                       |
+| The isotope envelope                       | `examples/plot.py` and `examples/results/isotopes.json`                      | `annotate_isotopes` maths changes. Re-run the reproduction and plotting scripts. |
+| The tool list (15 names)                   | `src/pages/index.astro` — `toolGuide`; guarded by `scripts/verify-build.mjs` | A tool is added, renamed or removed in `src/msmcp/tools/`.                       |
+| Install commands                           | `src/pages/index.astro` — `installSnippet`                                   | The distribution story changes (PyPI, `server.json`, a container).               |
+| Document links                             | `src/pages/index.astro` — `docs`                                             | A file is renamed or moved in the MSMCP repository.                              |
 
 **Cardinal rule for edits:** every number and every code block on the page must be
-something the software actually printed or a file that actually exists. No
+a stated input, an output the software actually printed, or a file that actually exists. No
 benchmark, testimonial, adoption figure or security guarantee is invented. If a
 claim cannot be reproduced, it comes off the page rather than getting softened.
 
-## Provenance of the example on the page
+## Worked examples and provenance
 
-The workflow in the "Example" section is a real run, not an illustration:
-
-- **Query:** spectrum #966 of a Bruker maXis LC–MS/MS acquisition (RT 3.795 min,
-  precursor m/z 315.2321, 220 peaks). The acquisition's filename is deliberately
-  not published on the page.
-- **Library:** MassBank's public MSP library, 63,879 spectra, read from disk
-  through the same `SecurityPolicy` as the query.
-- **Scoring:** `classical` — greedy peak matching, ±0.02 Da — with the report's own
-  FDR threshold. Top candidate 0.8309 cosine, q = 0.0125; the runner-ups are
-  progesterone, a constitutional isomer at the same precursor m/z.
-- **The ppm verdict** (0.32 ppm) was produced by calling `validate_precursor`
-  against MassBank's reference mass, and is reproducible in one tool call.
-- **The isotope envelope** is `annotate_isotopes("C6H12O6")` output, transcribed
-  without rounding. Note that the MSMCP README's inline example of this tool shows
-  older values (`M+1` at 181.0721, `[M+H]+` at +1.006728 Da); the tool itself
-  prints 181.0668 and +1.007276 Da, which is what the page uses.
+The three examples, exact inputs, SHA-256 digests, actual captured responses and figure scripts live in [examples/README.md](examples/README.md). They use MSMCP 1.0.2 from PyPI. The caffeine spectra and the generated LC–MS fixture are synthetic demonstrations; their results are not measured data or independent analytical validation. Search results are uncalibrated similarity rankings. See the linked scientific validation record for the limits of independent evidence.
 
 ## Accessibility and performance notes
 

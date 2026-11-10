@@ -4,7 +4,7 @@
  *
  * This page makes claims about software, so the things that break silently are
  * the things that matter: an anchor that no longer resolves, a tool name that
- * drifts from the thirteen the server actually exposes, two words welded
+ * drifts from the fifteen the release exposes, two words welded
  * together by the template compiler, an external link that lost its
  * rel="noopener".  Each check below failed for a real reason at least once
  * while this page was built.
@@ -16,7 +16,7 @@ import { readFile } from "node:fs/promises";
 
 const DIST = "dist/index.html";
 
-/** The fourteen tools exposed by MSMCP main (src/msmcp/tools/*.py). */
+/** The fifteen tools exposed by MSMCP 1.0.2 (src/msmcp/tools/*.py). */
 const TOOLS = [
   "ping",
   "load_mzml_summary",
@@ -24,6 +24,7 @@ const TOOLS = [
   "load_spectrum",
   "summarise_reference",
   "release_reference",
+  "extract_chromatograms",
   "predict_adduct_offset",
   "annotate_isotopes",
   "validate_precursor",
@@ -83,7 +84,9 @@ check(
 const rows = [...html.matchAll(/data-tool="([^"]+)"/g)].map((m) => m[1]);
 check(
   `tools table has one row per tool (${rows.length} rows)`,
-  rows.length === TOOLS.length && new Set(rows).size === TOOLS.length,
+  rows.length === TOOLS.length &&
+    new Set(rows).size === TOOLS.length &&
+    TOOLS.every((t) => rows.includes(t)),
   `duplicate or missing: ${TOOLS.filter((t) => !rows.includes(t)).join(", ") || "none"}`,
 );
 
@@ -103,21 +106,13 @@ check(
   /Claude/.test(html) && /MCP host/.test(html) && /Model Context Protocol/.test(html),
   "the first screen must name an AI client, not only tool categories",
 );
-check(
-  "no fabricated install path (PyPI claim absent)",
-  !/pip install msmcp|pypi\.org\/project\/msmcp/i.test(html),
-  "page must not imply a published package",
-);
-check(
-  "search results are labelled as candidates, not identifications",
-  /candidate library matches/i.test(html) && /not validated compound identifications/i.test(html),
-);
-check(
-  "significance is presented as uncalibrated",
-  !/above the FDR threshold|false-discovery threshold buys/i.test(html) &&
-    /not yet calibrated/i.test(html),
-  "SCIENTIFIC_VALIDATION.md marks calibrated significance NOT VALIDATED",
-);
+check("published package is pinned", html.includes("pip install msmcp==1.0.2"));
+check("examples label synthetic data", /synthetic teaching data/i.test(html));
+check("search is not identification", /similarity is not structural identification/i.test(html));
+check("obsolete q-value transcript removed", !/q-value|q = 0\.0125/i.test(html));
+for (const figure of ["isotope", "spectra", "chromatograms"]) {
+  check(`figure ${figure} exists`, existsSync(`dist/figures/${figure}.svg`));
+}
 check(
   "no unverified testimonial or adoption claim",
   !/\b(testimonial|trusted by|used by \d|industry standard)\b/i.test(html),
@@ -141,7 +136,7 @@ check(
 );
 
 const TRUSTED =
-  /^https:\/\/(github\.com\/janusson|docs\.astral\.sh|fonts\.googleapis\.com|fonts\.gstatic\.com)/;
+  /^https:\/\/(github\.com\/janusson|docs\.astral\.sh|fonts\.googleapis\.com|fonts\.gstatic\.com|pypi\.org)/;
 const offRepo = external.filter((l) => !TRUSTED.test(l.href));
 check(
   "every external link points at a known-in-good-faith host",
@@ -199,7 +194,7 @@ check(
 );
 
 // ---- install path on the first screen --------------------------------------
-const runIdx = html.indexOf("uv run msmcp");
+const runIdx = html.indexOf("pip install msmcp==1.0.2");
 const exampleIdx = html.indexOf('id="example"');
 check(
   "a runnable command appears before the example section",
