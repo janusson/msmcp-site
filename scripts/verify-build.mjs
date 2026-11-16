@@ -4,19 +4,19 @@
  *
  * This page makes claims about software, so the things that break silently are
  * the things that matter: an anchor that no longer resolves, a tool name that
- * drifts from the thirteen the server actually exposes, two words welded
+ * drifts from the fifteen tools the 1.0.2 server actually exposes, two words welded
  * together by the template compiler, an external link that lost its
  * rel="noopener".  Each check below failed for a real reason at least once
  * while this page was built.
  *
- * Exits non-zero with a readable report.  Run via `make verify`.
+ * Exits non-zero with a readable report. Run with `npm run build && node scripts/verify-build.mjs`.
  */
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 
 const DIST = "dist/index.html";
 
-/** The fourteen tools exposed by MSMCP main (src/msmcp/tools/*.py). */
+/** The fifteen tools registered by the MSMCP 1.0.2 release. */
 const TOOLS = [
   "ping",
   "load_mzml_summary",
@@ -24,6 +24,7 @@ const TOOLS = [
   "load_spectrum",
   "summarise_reference",
   "release_reference",
+  "extract_chromatograms",
   "predict_adduct_offset",
   "annotate_isotopes",
   "validate_precursor",
@@ -45,9 +46,7 @@ const check = (name, condition, detail = "") => {
 };
 
 if (!existsSync(DIST)) {
-  console.error(
-    `No build to verify: ${DIST} does not exist. Run \`make verify\` (it builds first).`,
-  );
+  console.error(`No build to verify: ${DIST} does not exist. Run \`npm run build\` first.`);
   process.exit(1);
 }
 
@@ -83,8 +82,11 @@ check(
 const rows = [...html.matchAll(/data-tool="([^"]+)"/g)].map((m) => m[1]);
 check(
   `tools table has one row per tool (${rows.length} rows)`,
-  rows.length === TOOLS.length && new Set(rows).size === TOOLS.length,
-  `duplicate or missing: ${TOOLS.filter((t) => !rows.includes(t)).join(", ") || "none"}`,
+  rows.length === TOOLS.length &&
+    new Set(rows).size === TOOLS.length &&
+    TOOLS.every((tool) => rows.includes(tool)) &&
+    rows.every((tool) => TOOLS.includes(tool)),
+  `missing: ${TOOLS.filter((t) => !rows.includes(t)).join(", ") || "none"}; unexpected: ${rows.filter((t) => !TOOLS.includes(t)).join(", ") || "none"}`,
 );
 
 const emptyCalls = [
@@ -103,20 +105,65 @@ check(
   /Claude/.test(html) && /MCP host/.test(html) && /Model Context Protocol/.test(html),
   "the first screen must name an AI client, not only tool categories",
 );
+check("documented tool count matches the 1.0.2 tool surface", html.includes("15 tools"));
+const installCommand = "uvx --python 3.13 --from msmcp==1.0.2 msmcp";
 check(
-  "no fabricated install path (PyPI claim absent)",
-  !/pip install msmcp|pypi\.org\/project\/msmcp/i.test(html),
-  "page must not imply a published package",
+  "pinned PyPI quickstart is present and source cloning is not required",
+  html.includes(installCommand) && !/git clone https:\/\/github\.com\/janusson\/MSMCP/i.test(html),
+  "the first-screen command must install the published 1.0.2 distribution",
+);
+const configMarker = html.indexOf("&quot;context_servers&quot;");
+const configTagStart = html.lastIndexOf("<code", configMarker);
+const configContentStart = html.indexOf(">", configTagStart) + 1;
+const configContentEnd = html.indexOf("</code>", configMarker);
+let parsedClientConfig;
+try {
+  parsedClientConfig = JSON.parse(
+    html.slice(configContentStart, configContentEnd).replaceAll("&quot;", '"'),
+  );
+} catch {}
+const zedServer = parsedClientConfig?.context_servers?.msmcp;
+check(
+  "Zed stdio configuration is valid JSON and uses the pinned package command",
+  zedServer?.command === "uvx" &&
+    zedServer?.args?.join(" ") === "--python 3.13 --from msmcp==1.0.2 msmcp" &&
+    zedServer?.env?.MSMCP_ALLOWED_ROOT === "/absolute/path/to/ms-data",
 );
 check(
-  "search results are labelled as candidates, not identifications",
-  /candidate library matches/i.test(html) && /not validated compound identifications/i.test(html),
+  "synthetic search example is explicitly not an identification",
+  /fabricated demonstration spectra/i.test(html) && /not an identification probability/i.test(html),
 );
 check(
-  "significance is presented as uncalibrated",
-  !/above the FDR threshold|false-discovery threshold buys/i.test(html) &&
-    /not yet calibrated/i.test(html),
-  "SCIENTIFIC_VALIDATION.md marks calibrated significance NOT VALIDATED",
+  "production search does not claim calibrated significance",
+  /does not report p-values, q-values or calibrated FDR/i.test(html),
+);
+check(
+  "glucose isotope output matches 1.0.2's documented precision",
+  html.includes("181.0668") &&
+    html.includes("0.0686") &&
+    html.includes("182.0680") &&
+    html.includes("0.0143") &&
+    !/182\.0681|0\.0147|1\.47 %/.test(html),
+);
+check(
+  "historical THC/q-value search results are absent",
+  !/63,879|94\.9 s|q\s*≤\s*0\.05|EQ362902|Δ⁹-THC|0\.0125/.test(html),
+);
+check(
+  "PyPI release, GitHub release, and validation document are linked",
+  html.includes("https://pypi.org/project/msmcp/1.0.2/") &&
+    html.includes("https://github.com/janusson/MSMCP/releases/tag/1.0.2") &&
+    html.includes("https://github.com/janusson/MSMCP/blob/1.0.2/SCIENTIFIC_VALIDATION.md"),
+);
+const examples = [...html.matchAll(/data-example="(\d+)"/g)].map((m) => m[1]);
+check(
+  "three reproducible example links are documented",
+  examples.length === 3 &&
+    new Set(examples).size === 3 &&
+    html.includes("/tree/1.0.2/examples") &&
+    html.includes("SCIENTIFIC_VALIDATION.md#4-capability-2") &&
+    html.includes("VALIDATION_SIMILARITY.md#reproduction"),
+  `found ${examples.length} example links`,
 );
 check(
   "no unverified testimonial or adoption claim",
@@ -141,7 +188,7 @@ check(
 );
 
 const TRUSTED =
-  /^https:\/\/(github\.com\/janusson|docs\.astral\.sh|fonts\.googleapis\.com|fonts\.gstatic\.com)/;
+  /^https:\/\/(github\.com\/janusson|docs\.astral\.sh|pypi\.org\/project\/msmcp|fonts\.googleapis\.com|fonts\.gstatic\.com)/;
 const offRepo = external.filter((l) => !TRUSTED.test(l.href));
 check(
   "every external link points at a known-in-good-faith host",
@@ -199,12 +246,12 @@ check(
 );
 
 // ---- install path on the first screen --------------------------------------
-const runIdx = html.indexOf("uv run msmcp");
+const runIdx = html.indexOf(installCommand);
 const exampleIdx = html.indexOf('id="example"');
 check(
-  "a runnable command appears before the example section",
+  "the PyPI install command appears before the example section",
   runIdx !== -1 && exampleIdx !== -1 && runIdx < exampleIdx,
-  "the hero must carry the install, not only a link down the page",
+  "the first screen must carry the pinned package command",
 );
 
 // ---- inline-boundary whitespace --------------------------------------------
@@ -233,6 +280,39 @@ check(
 check(
   "no template leaks in the output",
   !/\b(undefined|\[object Object\]|NaN)\b/.test(html.replace(/<!--[\s\S]*?-->/g, "")),
+);
+
+check(
+  "job-ID placeholder is escaped and not parsed as an HTML tag",
+  /check_search_status\(job_id=(?:&quot;|")&lt;job ID returned by search_library&gt;(?:&quot;|")\)/.test(
+    html,
+  ) && !/<\/?job\b/i.test(html),
+);
+
+check("no whitespace before punctuation after closing links", !/<\/a>\s+[.,]/.test(visible));
+
+// ---- section nesting inside <main> -----------------------------------------
+const mainMatch = /<main\b[^>]*>([\s\S]*?)<\/main>/i.exec(html);
+const mainHtml = mainMatch?.[1] ?? "";
+const MAJOR_SECTIONS = ["top", "example", "why", "get-started", "tools", "docs"];
+const sectionDepths = new Map();
+let depth = 0;
+for (const tag of mainHtml.matchAll(/<(\/?)section\b([^>]*)>/gi)) {
+  if (tag[1] === "/") {
+    depth -= 1;
+  } else {
+    const id = /\bid="([^"]+)"/.exec(tag[2])?.[1];
+    if (id && MAJOR_SECTIONS.includes(id)) {
+      sectionDepths.set(id, depth);
+    }
+    depth += 1;
+  }
+}
+const nestedSections = MAJOR_SECTIONS.filter((id) => sectionDepths.get(id) !== 0);
+check(
+  "major page sections are direct siblings inside <main>",
+  Boolean(mainMatch) && depth === 0 && nestedSections.length === 0,
+  `depth=${depth}; bad sections=${nestedSections.join(", ") || "none"}`,
 );
 
 const bytes = Buffer.byteLength(html);

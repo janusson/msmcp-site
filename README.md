@@ -57,7 +57,7 @@ things that break silently on a static page making claims about software:
 - exactly one `<h1>`, a `lang`, and a meta description;
 - **every in-page `#anchor` resolves** — a dead nav link is the most likely
   regression on a one-page site;
-- **all fourteen MSMCP tool names still appear**, and the tools reference has
+- **every registered MSMCP tool name still appears**, and the tools reference has
   exactly one `data-tool` row per tool with a call in it, so a renamed or added
   tool cannot drift the page out of sync with the server;
 - the hero phrasing and the "candidates, not identifications" framing are intact;
@@ -224,7 +224,7 @@ changes:
 | ------------------------------------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | The transcribed workflow, hit table, and timings | `src/pages/index.astro` — the `hits` array and the transcript markup     | `search_library` scoring, the report format, or the null model changes. The numbers came from a single recorded run (see below); they are a record, not a live benchmark. |
 | The isotope envelope                             | `src/components/IsotopeFigure.astro` — the `peaks` array                 | `annotate_isotopes` maths changes. Re-run the tool and paste its output.                                                                                                  |
-| The tool list (13 names)                         | `src/pages/index.astro` — `tools`; guarded by `scripts/verify-build.mjs` | A tool is added, renamed or removed in `src/msmcp/tools/`.                                                                                                                |
+| The tool list                                    | `src/pages/index.astro` — `tools`; guarded by `scripts/verify-build.mjs` | A tool is added, renamed or removed in `src/msmcp/tools/`.                                                                                                                |
 | Install commands                                 | `src/pages/index.astro` — `installSnippet`                               | The distribution story changes (PyPI, `server.json`, a container).                                                                                                        |
 | Document links                                   | `src/pages/index.astro` — `docs`                                         | A file is renamed or moved in the MSMCP repository.                                                                                                                       |
 

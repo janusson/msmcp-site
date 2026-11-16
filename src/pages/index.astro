@@ -9,22 +9,17 @@ const description =
 
 const REPO = "https://github.com/janusson/MSMCP";
 
-/* Code snippets live here rather than inline: a JSON block in markup would be
-   parsed as an Astro expression.  `uv sync` installs the runtime dependencies
-   only; the extras (chem, dev) are named in the prose beside it. */
-const installSnippet = [
-  "git clone https://github.com/janusson/MSMCP.git",
-  "cd MSMCP",
-  "uv sync",
-  "uv run msmcp",
-].join("\n");
+/* These are the published PyPI command and Zed stdio-server configuration.
+   Keeping the same pinned command in both places makes the quickstart directly
+   testable and prevents the page from drifting back to a source checkout. */
+const installSnippet = "uvx --python 3.13 --from msmcp==1.0.2 msmcp";
 
 const zedSnippet = JSON.stringify(
   {
     context_servers: {
       msmcp: {
-        command: "/absolute/path/to/uv",
-        args: ["run", "--directory", "/absolute/path/to/MSMCP", "msmcp"],
+        command: "uvx",
+        args: ["--python", "3.13", "--from", "msmcp==1.0.2", "msmcp"],
         env: { MSMCP_ALLOWED_ROOT: "/absolute/path/to/ms-data" },
       },
     },
@@ -33,24 +28,27 @@ const zedSnippet = JSON.stringify(
   2,
 );
 
-/* The result of search_library -> check_search_status, from a real run:
-   a Bruker maXis LC-MS/MS acquisition (spectrum #966, RT 3.795 min, precursor
-   m/z 315.2321, 220 peaks) searched against MassBank's public MSP library
-   (63,879 spectra) with classical greedy peak matching at +/-0.02 Da. */
-const hits = [
-  { rank: 1, id: "EQ362902", name: "Δ⁹-tetrahydrocannabinol", cosine: "0.8309", q: "0.0125" },
-  { rank: 2, id: "AU158302", name: "Δ⁹-tetrahydrocannabinol", cosine: "0.7842", q: "0.0125" },
-  { rank: 3, id: "AU158301", name: "Δ⁹-tetrahydrocannabinol", cosine: "0.6958", q: "0.0333" },
-  { rank: 4, id: "AU107706", name: "progesterone", cosine: "0.6922", q: "0.0333" },
-  { rank: 5, id: "AU107702", name: "progesterone", cosine: "0.6862", q: "0.0333" },
-  { rank: 6, id: "EQ362901", name: "Δ⁹-tetrahydrocannabinol", cosine: "0.6827", q: "0.0333" },
+const reproducibleExamples = [
+  {
+    title: "Synthetic caffeine search",
+    href: `${REPO}/tree/1.0.2/examples`,
+    note: "Committed MGF/MSP demo files; mechanics only, not an identification.",
+  },
+  {
+    title: "Glucose isotope envelope",
+    href: `${REPO}/blob/1.0.2/SCIENTIFIC_VALIDATION.md#4-capability-2--exact-mass-and-isotope-calculations`,
+    note: "Independent reference values and scope for the exact-mass calculation.",
+  },
+  {
+    title: "Similarity validation reproduction",
+    href: `${REPO}/blob/1.0.2/VALIDATION_SIMILARITY.md#reproduction`,
+    note: "Pinned MassBank/matchms experiment; partial validation, not calibrated confidence.",
+  },
 ];
 
-/* The tool surface, as the server advertises it: fourteen registrations in
-   src/msmcp/tools/*.py, checked against `tools/list` by the project's own
-   contract test.  Every call below is a real signature — the argument names and
-   defaults are the ones a client receives — and the words on the right are what
-   the tool's report actually contains, not a wish list. */
+/* The tool surface, as the 1.0.2 server advertises it: fifteen registrations
+   across src/msmcp/tools/*.py. Every call below uses the released argument
+   names; descriptions stay within what the corresponding tool returns. */
 const toolGuide = [
   {
     id: "inspection",
@@ -73,7 +71,7 @@ const toolGuide = [
       {
         name: "load_spectrum",
         ask: "Hold one spectrum server-side.",
-        call: `load_spectrum(file_path="/data/run.mzML", spectrum_index=966)`,
+        call: `load_spectrum(file_path="/data/run.mzML", spectrum_index=0)`,
         returns:
           "Metadata plus a ptr:spectrum:… handle. The peak array stays in the server's memory instead of entering the conversation.",
       },
@@ -99,8 +97,8 @@ const toolGuide = [
     tools: [
       {
         name: "validate_precursor",
-        ask: "Does this precursor mass fit the formula I think it is?",
-        call: `validate_precursor(theoretical_mass=315.2320, experimental_mass=315.2321)`,
+        ask: "Does this precursor mass fit the formula I think it does?",
+        call: `validate_precursor(theoretical_mass=180.0634, experimental_mass=180.0634)`,
         returns:
           "Mass error and a PASSED or REJECTED verdict against the named instrument class — 5.0 ppm for the generic class — with the tolerance stated.",
       },
@@ -127,9 +125,23 @@ const toolGuide = [
       {
         name: "compute_cosine",
         ask: "How similar are these two MS/MS spectra?",
-        call: `compute_cosine(query_reference="ptr:spectrum:…", reference_peaks=[[mz, intensity], …])`,
+
+        call: `compute_cosine(query_peaks=[[100.0, 1.0]], reference_peaks=[[100.0, 1.0]])`,
         returns:
           "A cosine score under the class's m/z window with the matched-peak count, computed by greedy one-to-one peak matching.",
+      },
+    ],
+  },
+  {
+    id: "chromatograms",
+    area: "Chromatograms",
+    tools: [
+      {
+        name: "extract_chromatograms",
+        ask: "Extract TIC, BPC and a target-ion trace from an mzML acquisition.",
+        call: `extract_chromatograms(file_path="/data/run.mzML", targets_mz=[195.0877], tolerance=5.0, tolerance_unit="ppm", ms_level=1)`,
+        returns:
+          "Structured scan-level traces with provenance and completeness metadata. TIC is summed intensity; XIC windows are inclusive. The 5 ppm example window is a caller-selected parameter, not an identification threshold; no smoothing, blank subtraction or identification is performed.",
       },
     ],
   },
@@ -142,7 +154,7 @@ const toolGuide = [
         ask: "Was this run worth searching?",
         call: `generate_qc_summary(file_path="/data/run.mzML")`,
         returns:
-          "Spectrum and total-ion-current counts, peak density, an estimated signal-to-noise ratio and diagnostic-ion prevalence. Reads the whole file, so it is the slow inspection call.",
+          "Spectrum and total-ion-current counts, peak density, an estimated signal-to-noise ratio and diagnostic-ion prevalence. Scans up to the server limit and reports when full-acquisition coverage is unconfirmed.",
       },
     ],
   },
@@ -155,19 +167,19 @@ const toolGuide = [
         ask: "Match this MS2 against the library I already have.",
         call: `search_library(database_file="/data/libraries/MassBank.msp", spectrum_reference="ptr:spectrum:…", scoring_method="classical")`,
         returns:
-          "A job ID straight away. The MSP library is read from disk through the same boundary as an acquisition, and the scan runs in the background.",
+          "A job ID straight away. MSP/NIST text and MGF libraries are read from disk through the same boundary as an acquisition; the scan runs in the background. No calibrated statistical significance is reported.",
       },
       {
         name: "check_search_status",
         ask: "Is the scan finished?",
-        call: `check_search_status(job_id="2aafd7b8…")`,
+        call: `check_search_status(job_id="2aafd7b8f1c44b42a987a34b0f724610")`,
         returns:
           "Running, completed or failed — then the ranked report, naming the scorer, tolerances, library source and provenance.",
       },
       {
         name: "cancel_search",
         ask: "Stop the scan.",
-        call: `cancel_search(job_id="2aafd7b8…")`,
+        call: `cancel_search(job_id="2aafd7b8f1c44b42a987a34b0f724610")`,
         returns:
           "Cancellation. A job that already finished is reported as finished, and a cancelled scan's partial work is discarded.",
       },
@@ -179,40 +191,47 @@ const toolGuide = [
     tools: [
       {
         name: "ping",
-        ask: "Is the server alive, and can it see its dependencies?",
+        ask: "Is the server alive?",
         call: `ping()`,
         returns:
-          "Operational status and the MassFlow version it can import. Call it first when another tool fails unexpectedly.",
+          "Operational status and optional imaging-distribution metadata. This does not verify imzML compatibility; call it first when another tool fails unexpectedly.",
       },
     ],
   },
 ];
 
 const docs = [
-  { label: "Quick start & tool reference", href: `${REPO}#quick-start`, note: "README" },
   {
-    label: "Architecture, layers & limitations",
-    href: `${REPO}/blob/main/ARCHITECTURE.md`,
-    note: "ARCHITECTURE.md",
+    label: "PyPI package 1.0.2",
+    href: "https://pypi.org/project/msmcp/1.0.2/",
+    note: "published distribution · Python 3.13+",
+  },
+  {
+    label: "GitHub release 1.0.2",
+    href: `${REPO}/releases/tag/1.0.2`,
+    note: "release notes and tagged source",
   },
   {
     label: "Scientific validation status",
-    href: `${REPO}/blob/main/SCIENTIFIC_VALIDATION.md`,
-    note: "what is, and is not, validated",
+    href: `${REPO}/blob/1.0.2/SCIENTIFIC_VALIDATION.md`,
+    note: "what is, and is not, independently validated",
   },
   {
-    label: "Security notes",
-    href: `${REPO}#security-notes`,
-    note: "allowed root, size caps, stdio-only",
+    label: "Architecture and security",
+    href: `${REPO}/blob/1.0.2/ARCHITECTURE.md`,
+    note: "boundaries, transport and limitations",
   },
   {
     label: "Configuration reference",
-    href: `${REPO}#configuration-reference`,
-    note: "environment variables",
+    href: `${REPO}/blob/1.0.2/README.md#configuration-reference`,
+    note: "environment variables and local file access",
   },
-  { label: "Roadmap", href: `${REPO}/blob/main/docs/roadmap.md`, note: "plan of record" },
-  { label: "Changelog", href: `${REPO}/blob/main/CHANGELOG.md`, note: "release history" },
-  { label: "Release 1.0.0", href: `${REPO}/releases/tag/1.0.0`, note: "tagged release" },
+  {
+    label: "Similarity validation",
+    href: `${REPO}/blob/1.0.2/VALIDATION_SIMILARITY.md`,
+    note: "bounded independent comparison; status PARTIAL",
+  },
+  { label: "Changelog", href: `${REPO}/blob/1.0.2/CHANGELOG.md`, note: "release history" },
   { label: "Questions & bug reports", href: `${REPO}/issues`, note: "GitHub Issues" },
 ];
 ---
@@ -229,21 +248,19 @@ const docs = [
         <p class="eyebrow">Open-source MCP server · Mass spectrometry</p>
 
         <h1
-          class="mt-5 text-balance text-[clamp(2rem,5.2vw,3.1rem)] font-bold leading-[1.12] tracking-[-0.02em] text-head"
+          class="mt-5 text-balance text-display font-bold leading-[1.12] tracking-[-0.02em] text-head"
         >
           Ask your AI assistant about your mass spectrometry data.
         </h1>
 
-        <p class="mt-6 max-w-2xl text-[1.08rem] leading-relaxed text-ink">
+        <p class="mt-6 max-w-2xl text-lead leading-relaxed text-ink">
           MSMCP puts your own data in front of an AI client — Claude, Zed, or any other MCP host.
           Ask it to open an mzML, MGF or imzML file, check a precursor mass against a formula,
           compute isotope and adduct patterns, score an MS/MS spectrum against your MSP library, or
           summarise QC across a run.
         </p>
 
-        <p class="mt-4 max-w-2xl text-[1.02rem] font-medium leading-relaxed text-head">
-          The model reasons. The tools compute.
-        </p>
+        <p class="hero-thesis mt-5 max-w-2xl">The model reasons. The tools compute.</p>
 
         <p class="mt-3 max-w-2xl leading-relaxed text-ink-soft">
           MCP — the Model Context Protocol — is the open standard that lets an assistant call tools
@@ -251,14 +268,14 @@ const docs = [
         </p>
 
         <div class="mt-8 flex flex-wrap items-center gap-3">
-          <a class="btn btn-primary" href="#get-started"
-            >Get started <span aria-hidden="true">→</span></a
-          >
-          <a class="btn btn-ghost" href="#example">See an example</a>
+          <a class="btn btn-primary" href="#get-started">
+            Get started <span aria-hidden="true">→</span>
+          </a>
+          <a class="btn btn-ghost" href="#example"> See an example </a>
         </div>
 
         <ul class="mt-8 flex flex-wrap gap-2">
-          <li class="chip">14 tools</li>
+          <li class="chip">15 tools</li>
           <li class="chip">mzML · MGF · imzML</li>
           <li class="chip">stdio, local only</li>
           <li class="chip">no credentials</li>
@@ -268,9 +285,9 @@ const docs = [
 
       <div class="min-w-0 space-y-6">
         <div class="card p-4">
-          <p class="text-[0.72rem] font-medium text-ink-mute">Run it now</p>
+          <p class="text-note font-medium text-ink-mute">Run it now</p>
           <pre
-            class="mono-block mt-2 p-3 text-[0.75rem] whitespace-pre-wrap [overflow-wrap:anywhere]"
+            class="mono-block mt-2 p-3 text-note whitespace-pre-wrap [overflow-wrap:anywhere]"
             aria-label="Install commands"><code>{installSnippet}</code></pre>
         </div>
         <ReferenceFlow />
@@ -284,152 +301,84 @@ const docs = [
       =================================================================== */
   }
   <section id="example" class="shell scroll-mt-24 pb-16 md:pb-24">
-    <p class="eyebrow">Example</p>
-    <h2 class="mt-3 max-w-3xl rule-heading">One question, four tool calls.</h2>
+    <p class="eyebrow">Reproducible demo · release 1.0.2</p>
+    <h2 class="mt-3 section-heading">A synthetic library search, not a chemical finding.</h2>
     <p class="mt-4 max-w-3xl leading-relaxed text-ink-soft">
-      The transcript below is a real run of MSMCP against a real acquisition and a real spectral
-      library. The library scan is the slow step, and it never blocks the conversation — it is
-      dispatched as a job and polled.
+      The release includes a small caffeine MGF query and an MSP library. Put both files under the
+      configured allowed root, load the MS2 spectrum, dispatch a search, then poll its job. The
+      fixture deliberately duplicates a library record, so this verifies the tool flow — not
+      identification accuracy or scientific significance.
     </p>
 
     <div class="mt-8 overflow-hidden card">
-      <div class="border-b border-line-soft px-5 py-3 text-[0.75rem] text-ink-mute">
-        session · MSMCP 1.0.0 over stdio · reference and job IDs shortened
+      <div class="border-b border-line-soft px-5 py-3 text-note text-ink-mute">
+        synthetic fixture · MSMCP 1.0.2 · stdio
       </div>
-
-      <div class="space-y-6 p-5">
-        {/* turn 1 — the question */}
-        <div class="flex gap-3">
-          <span class="mt-0.5 font-mono text-[0.7rem] uppercase tracking-wider text-ink-mute"
-            >You</span
-          >
-          <p class="text-ink">
-            “I have a peak eluting at 3.80 min, precursor m/z 315.2321, MS2. Is it Δ⁹-THC?”
-          </p>
-        </div>
-
-        {/* turn 2 — inspect */}
-        <div class="space-y-2 border-l-2 border-accent-soft pl-4">
-          <p class="font-mono text-[0.78rem] text-accent-ink [overflow-wrap:anywhere]">
-            load_spectrum(file_path="experiment.mzML", spectrum_index=966)
-          </p>
-          <div class="mono-block px-3.5 py-2.5 text-ink-soft" tabindex="0">
-            kind=spectrum &nbsp;format=mzML &nbsp;backend=msmcp.mzml &nbsp;ms_level=2<br />
-            precursor_mz=315.2321 &nbsp;n_peaks=220 &nbsp;mz_range=[65.0382, 318.2416]<br />
-            reference=<span class="text-accent-ink">"ptr:spectrum:264a5ae9…"</span>
-            <span class="text-ink-mute">← the 220 peaks stay on the server</span>
+      <div class="p-5">
+        <div class="space-y-4">
+          <div>
+            <p class="eyebrow">1 · Load the query</p>
+            <div class="mono-block mt-2 p-3 text-note whitespace-pre-wrap [overflow-wrap:anywhere]">
+              <code>load_spectrum(file_path="/data/caffeine_spectrum.mgf", spectrum_index=0)</code>
+            </div>
           </div>
-        </div>
-
-        {/* turn 3 — ppm gate */}
-        <div class="space-y-2 border-l-2 border-accent-soft pl-4">
-          <p class="font-mono text-[0.78rem] text-accent-ink [overflow-wrap:anywhere]">
-            validate_precursor(theoretical_mass=315.2320, experimental_mass=315.2321)
-          </p>
-          <div class="mono-block px-3.5 py-2.5 text-ink-soft" tabindex="0">
-            <span class="text-head">VALIDATION PASSED</span> — mass error <span class="text-head"
-              >0.32 ppm</span
-            >, within the 5.0 ppm gate for the generic instrument class.
+          <div>
+            <p class="eyebrow">2 · Search and poll</p>
+            <div class="mono-block mt-2 p-3 text-note whitespace-pre-wrap [overflow-wrap:anywhere]">
+              <code
+                >search_library(database_file="/data/caffeine_library.msp",
+                spectrum_reference="ptr:spectrum:…", scoring_method="classical")</code
+              >
+            </div>
+            <div class="mono-block mt-2 p-3 text-note whitespace-pre-wrap [overflow-wrap:anywhere]">
+              <code>{`check_search_status(job_id="<job ID returned by search_library>")`}</code>
+            </div>
           </div>
-        </div>
-
-        {/* turn 4 — dispatch */}
-        <div class="space-y-2 border-l-2 border-accent-soft pl-4">
-          <p class="font-mono text-[0.78rem] text-accent-ink [overflow-wrap:anywhere]">
-            search_library(spectrum_reference="ptr:spectrum:264a5ae9…",
-            database_file="libraries/MASSBANK.msp", scoring_method="classical")
-          </p>
-          <div class="mono-block px-3.5 py-2.5 text-ink-soft" tabindex="0">
-            Job ID: <span class="text-accent-ink">2aafd7b8…</span> — scanner reads the library from disk
-            through the security boundary and searches it for real. The tool call returns immediately.
-          </div>
-        </div>
-
-        {/* turn 5 — poll */}
-        <div class="space-y-2 border-l-2 border-accent-soft pl-4">
-          <p class="font-mono text-[0.78rem] text-accent-ink [overflow-wrap:anywhere]">
-            check_search_status(job_id="2aafd7b8…") <span class="text-ink-mute">→ running</span> …
-            <br />
-            check_search_status(job_id="2aafd7b8…") <span class="text-ink-mute">→ completed</span>
-          </p>
-
-          <div class="card bg-panel-soft">
-            <p class="px-4 pt-4 text-[0.78rem] text-ink-mute">
-              63,879 library spectra scored against 220 query peaks · classical greedy peak
-              matching, ±0.02 Da · 94.9 s · 6 hits at q ≤ 0.05
-            </p>
+          <div class="min-w-0 rounded-lg border border-line bg-panel-soft p-4">
+            <p class="text-note font-medium text-ink-mute">Example candidate report</p>
             <div
-              class="overflow-x-auto"
+              class="mt-3 overflow-x-auto"
               tabindex="0"
               role="region"
-              aria-label="Spectral library search candidates"
+              aria-label="Synthetic caffeine search result"
             >
-              <table class="w-full text-left text-[0.78rem] sm:text-[0.82rem]">
-                <caption class="sr-only">Spectral library search candidates</caption>
+              <table class="w-full text-left text-note">
+                <caption class="sr-only">Synthetic caffeine library search result</caption>
                 <thead>
-                  <tr class="text-[0.72rem] uppercase tracking-wider text-ink-mute">
-                    <th scope="col" class="hidden px-3 py-2 font-medium sm:table-cell sm:px-4"
-                      >Rank</th
-                    >
-                    <th scope="col" class="px-3 py-2 font-medium sm:px-4"
-                      >Candidate (MassBank accession)</th
-                    >
-                    <th scope="col" class="px-3 py-2 text-right font-medium sm:px-4">Cosine</th>
-                    <th scope="col" class="px-3 py-2 text-right font-medium sm:px-4"
-                      ><span class="sm:hidden">q</span><span class="hidden sm:inline">q-value</span
-                      ></th
-                    >
+                  <tr class="text-note uppercase tracking-wider text-ink-mute">
+                    <th scope="col" class="py-2 pr-3 font-medium">Rank</th>
+                    <th scope="col" class="py-2 pr-3 font-medium">Candidate</th>
+                    <th scope="col" class="py-2 pr-3 text-right font-medium">Score</th>
+                    <th scope="col" class="py-2 text-right font-medium">Precursor m/z</th>
                   </tr>
                 </thead>
                 <tbody class="font-mono">
-                  {
-                    hits.map((h) => (
-                      <tr class="border-t border-line-soft">
-                        <td class="hidden px-3 py-2 text-ink-mute sm:table-cell sm:px-4">
-                          {h.rank}
-                        </td>
-                        <td class="px-3 py-2 font-sans sm:px-4">
-                          <span class="mr-1.5 text-ink-mute sm:hidden">{h.rank}.</span>
-                          <span class="text-ink">{h.name}</span>
-                          <span class="block text-[0.7rem] text-ink-mute sm:ml-2 sm:inline sm:text-[0.74rem]">
-                            {h.id} · C21H30O2
-                          </span>
-                        </td>
-                        <td class="px-3 py-2 text-right whitespace-nowrap text-head sm:px-4">
-                          {h.cosine}
-                        </td>
-                        <td class="px-3 py-2 text-right whitespace-nowrap text-ink-soft sm:px-4">
-                          {h.q}
-                        </td>
-                      </tr>
-                    ))
-                  }
+                  <tr class="border-t border-line-soft">
+                    <td class="py-2 pr-3">1</td>
+                    <td class="py-2 pr-3 font-sans text-ink"
+                      >Caffeine <span class="block text-note text-ink-mute">C8H10N4O2</span></td
+                    >
+                    <td class="py-2 pr-3 text-right text-head">1.0000</td>
+                    <td class="py-2 text-right text-ink-soft">195.0877</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
+            <p class="mt-3 text-note leading-relaxed text-ink-mute">
+              These are fabricated demonstration spectra and an exact synthetic match. The score is
+              a ranking value, not an identification probability or error rate.
+            </p>
           </div>
-
-          <p class="text-[0.85rem] text-ink-soft">
-            The report MSMCP returns leads with its own caveat: these are candidate library matches
-            ranked by the stated scorer and significance model, not validated compound
-            identifications. Note the competition — the runner-up candidates are progesterone, a
-            constitutional isomer at the same precursor m/z. That is what a deterministic score buys
-            an analytical chemist: the whole field, not one confident answer. The q-values beside
-            those candidates are the tool's own significance estimate and are not yet calibrated —
-            MSMCP's scientific validation record marks that capability not validated — so read them
-            as a ranking aid, not as an error rate.
-          </p>
         </div>
       </div>
-
-      <div class="border-t border-line-soft px-5 py-4 text-[0.76rem] leading-relaxed text-ink-mute">
-        Provenance of this transcript: MSMCP 1.0.0: <code>search_library</code> with{" "}
-        <code>scoring_method="classical"</code>, run against MassBank's public MSP library (63,879
-        spectra) read from disk, querying spectrum #966 of a Bruker maXis LC–MS/MS acquisition (RT
-        3.795 min, precursor m/z 315.2321, 220 peaks, m/z range 65.0382–318.2416). The ppm verdict
-        is a fresh <code>validate_precursor</code> call against MassBank's reference mass. Beyond shortened
-        IDs, relative library paths and a stand-in filename for the acquisition, the numbers are the tools'
-        own output, unedited — and the acquisition's real filename is not published here.
+      <div class="border-t border-line-soft px-5 py-4 text-note leading-relaxed text-ink-mute">
+        Reproduce with the <a
+          class="prose-link"
+          href={`${REPO}/tree/1.0.2/examples`}
+          target="_blank"
+          rel="noopener">release 1.0.2 example files</a
+        >. Production search reports similarity-ranked candidates only; it does not report p-values,
+        q-values or calibrated FDR.
       </div>
     </div>
   </section>
@@ -440,10 +389,7 @@ const docs = [
       =================================================================== */
   }
   <section id="why" class="shell scroll-mt-24 pb-16 md:pb-24">
-    <p class="eyebrow">Why MSMCP</p>
-    <h2 class="mt-3 max-w-3xl rule-heading">
-      Grounded, deterministic, and honest about its own boundaries.
-    </h2>
+    <h2 class="section-heading">Grounded, deterministic, and honest about its own boundaries.</h2>
     <p class="mt-4 max-w-3xl leading-relaxed text-ink-soft">
       LLMs should reason about mass spectrometry, not perform the arithmetic. Every scientific value
       on this page is a tool's output rather than a model's recollection, and every derived result
@@ -453,83 +399,70 @@ const docs = [
 
     <div class="mt-8 grid gap-6 lg:grid-cols-3">
       <article class="card p-5">
-        <h3 class="font-mono text-[0.95rem] font-semibold text-head">Grounded analysis</h3>
-        <p class="mt-3 text-[0.88rem] leading-relaxed text-ink-soft">
-          The model calls the tool; the tool does the chemistry. Exact masses, adduct shifts,
-          isotope envelopes, ppm gates and cosine scores are computed by pure, unit-tested Python —
-          the same functions every time, answering the same way. The model never invents a mass and
-          never does the arithmetic.
-        </p>
-        <p class="mt-3 text-[0.88rem] leading-relaxed text-ink-soft">
-          The isotope envelope on this page is <code>annotate_isotopes</code> output for glucose; the
-          0.32 ppm verdict above is <code>validate_precursor</code> output. Neither was written by a language
-          model.
+        <h3 class="font-mono text-base font-semibold text-head">Grounded analysis</h3>
+        <p class="mt-3 leading-relaxed text-ink-soft">
+          MSMCP computes exact masses, adduct shifts, isotope envelopes, ppm gates and cosine scores
+          in deterministic Python tools. The glucose isotope figure below shows output from the
+          released tool.
         </p>
       </article>
 
       <article class="card p-5">
-        <h3 class="font-mono text-[0.95rem] font-semibold text-head">
-          Deterministic and auditable
-        </h3>
-        <p class="mt-3 text-[0.88rem] leading-relaxed text-ink-soft">
-          Reproducible execution is separated from the model's variable interpretation. Fast
-          operations return immediately; long ones — a library scan is minutes — are dispatched to a
-          job executor and polled, so a client timeout can never truncate a result.
-        </p>
-        <p class="mt-3 text-[0.88rem] leading-relaxed text-ink-soft">
-          Every derived object carries an immutable provenance record: the operation, its
-          parameters, the source file with reader backend and SHA-256 digest, the parent references,
-          and the software and model versions. When an answer is wrong, you can tell whether the
-          tool failed or the interpretation did.
+        <h3 class="font-mono text-base font-semibold text-head">Deterministic and auditable</h3>
+        <p class="mt-3 leading-relaxed text-ink-soft">
+          Long searches run as jobs that a client can poll. Loaded spectra and search reports
+          include provenance for their inputs and parameters; a score remains a ranking, not a
+          confidence estimate.
         </p>
       </article>
 
       <article class="card p-5">
-        <h3 class="font-mono text-[0.95rem] font-semibold text-head">Data control</h3>
-        <p class="mt-3 text-[0.88rem] leading-relaxed text-ink-soft">
-          MSMCP runs as a local child process on stdio: it makes no network calls of its own, stores
-          no credentials, and ships no library data. Every file read is confined to one allowed
-          root, under file-size and spectrum-count caps, and a path that escapes that root —
-          symlinks included — is refused rather than read.
-        </p>
-        <p class="mt-3 text-[0.88rem] leading-relaxed text-ink-soft">
-          Its boundary is stated, not implied: the host spawns the server with your credentials, so
-          anyone who can drive your LLM client can drive the server. Run it on a machine you own,
-          and never expose it as a network service.
+        <h3 class="font-mono text-base font-semibold text-head">Data control</h3>
+        <p class="mt-3 leading-relaxed text-ink-soft">
+          MSMCP runs locally over stdio, makes no network calls of its own, and confines file reads
+          to an allowed root under size caps. The host still controls the process with your
+          permissions, so anyone who can drive that client can drive MSMCP; run it on a machine you
+          own, never as a network service. See the{" "}
+          <a class="prose-link" href={`${REPO}/blob/1.0.2/README.md#security-notes`}
+            >security notes</a
+          >.
         </p>
       </article>
     </div>
 
     <div class="mt-8 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-      <div class="min-w-0"><IsotopeFigure /></div>
+      <div class="min-w-0">
+        <IsotopeFigure />
+      </div>
       <div class="card min-w-0 p-5">
         <p class="eyebrow">Also verified in the tree</p>
-        <ul class="mt-4 space-y-3 text-[0.88rem] leading-relaxed text-ink-soft">
+        <ul class="mt-4 space-y-3 text-small leading-relaxed text-ink-soft">
           <li>
-            <span class="font-mono text-[0.8rem] text-ink">14 tools</span> across inspection, chemistry,
-            similarity, quality control and library search — every one asserted by the test suite, and
-            the wire schemas checked separately so no parameter reaches a model undocumented.
+            <span class="font-mono text-note text-ink">15 tools</span> across inspection, chemistry, similarity,
+            chromatograms, quality control and library search. Their names match the 1.0.2 server's registered
+            tool surface.
           </li>
           <li>
-            <span class="font-mono text-[0.8rem] text-ink">Readers</span> for mzML (including zlib-compressed
-            arrays, parsed by MSMCP itself), strict MGF, and imzML imaging data through MassFlow. Vendor
-            formats are refused with conversion guidance instead of a stack trace.
+            <span class="font-mono text-note text-ink">Readers</span> for mzML (including zlib-compressed
+            arrays, parsed by MSMCP itself), strict MGF, and imzML imaging data through the optional extra.
+            Vendor formats are refused with conversion guidance.
           </li>
           <li>
-            <span class="font-mono text-[0.8rem] text-ink">MSP/NIST libraries</span> are read from disk
-            behind the same security boundary as an acquisition, so <code>search_library</code> searches
-            the libraries you already have — no upload, no hosted service.
+            <span class="font-mono text-note text-ink">MSP/NIST and MGF libraries</span>{" "}
+            are read from disk behind the same security boundary as an acquisition, so{" "}
+            <code>search_library</code> can search supported local libraries without an upload or hosted
+            service.
           </li>
           <li>
-            <span class="font-mono text-[0.8rem] text-ink">Empirical evaluation</span> ships with the
-            code: a notebook drives the real server end to end and fails the gate if a registered tool
-            is never exercised or a workflow's context cost grows by half.
+            <span class="font-mono text-note text-ink">Similarity validation</span> is documented as PARTIAL:
+            the pinned comparison is reproducible, but it does not establish open-set accuracy or calibrated
+            confidence.
           </li>
           <li>
-            <span class="font-mono text-[0.8rem] text-ink">Spectral foundation models</span> plug in behind
-            one adapter (DreaMS runs real inference; LSM-MS2 awaits public weights). Core MSMCP never
-            requires model weights — and if a model is unavailable it says so rather than returning a
-            number that looks learned.
+            <span class="font-mono text-note text-ink">Spectral foundation models</span>{" "}
+            plug in behind one adapter (DreaMS runs real inference; LSM-MS2 awaits public weights). Core
+            MSMCP never requires model weights — and if a model is unavailable it says so rather than
+            returning a number that looks learned.
           </li>
         </ul>
       </div>
@@ -542,47 +475,41 @@ const docs = [
       =================================================================== */
   }
   <section id="get-started" class="shell scroll-mt-24 pb-16 md:pb-24">
-    <p class="eyebrow">Get started</p>
-    <h2 class="mt-3 rule-heading">Install from source: clone, sync, run.</h2>
+    <h2 class="section-heading">Install MSMCP 1.0.2 from PyPI.</h2>
     <p class="mt-4 max-w-3xl leading-relaxed text-ink-soft">
-      MSMCP is not published to PyPI yet, so there is no package to install and no binary to
-      download: the path today is a clone, synced with <a
-        class="prose-link"
-        href="https://docs.astral.sh/uv/">uv</a
-      >. You need <code>uv</code> and Python 3.13, which <code>.python-version</code> pins for you. No
-      API key, no account, no server to sign up for.
+      MSMCP 1.0.2 is published on PyPI and requires Python 3.13 or later. Install it in an isolated
+      environment with <a class="prose-link" href="https://docs.astral.sh/uv/">uv</a>; the command
+      below is pinned to the published version. No API key, account or hosted service is needed.
     </p>
 
     <div class="mt-7 grid gap-6 lg:grid-cols-2">
       <div class="min-w-0">
-        <h3 class="text-[0.8rem] font-semibold uppercase tracking-[0.14em] text-ink-mute">
-          Clone, sync, run
+        <h3 class="text-note font-semibold uppercase tracking-[0.14em] text-ink-mute">
+          PyPI quickstart
         </h3>
         <pre
           class="mono-block mt-3 p-4 text-ink"
           tabindex="0"><code class="text-ink">{installSnippet}</code></pre>
-        <p class="mt-3 text-[0.85rem] leading-relaxed text-ink-soft">
-          Optional extras: <code>--extra chem</code> adds RDKit so SMILES can be converted to a formula;
-          embedding-based scoring needs the DreaMS model installed separately from source. Neither is
-          required for the core server.
+        <p class="mt-3 text-small leading-relaxed text-ink-soft">
+          This is the stdio server command for your MCP host. The release wheel is fetched from PyPI
+          into uv's isolated tool environment; source cloning is not required.
         </p>
       </div>
 
       <div class="min-w-0">
-        <h3 class="text-[0.8rem] font-semibold uppercase tracking-[0.14em] text-ink-mute">
+        <h3 class="text-note font-semibold uppercase tracking-[0.14em] text-ink-mute">
           Point a client at it
         </h3>
         <pre
           class="mono-block mt-3 p-4 text-ink"
           tabindex="0"><code class="text-ink">{zedSnippet}</code></pre>
-        <p class="mt-3 text-[0.85rem] leading-relaxed text-ink-soft">
-          Shown for Zed's <code>context_servers</code>; any host that can spawn a stdio MCP server
-          configures the same command and arguments. Replace all three paths: <code>uv</code> itself (<code
-            >command -v uv</code
-          >), your clone, and the directory holding your acquisitions and libraries. <code
-            >MSMCP_ALLOWED_ROOT</code
-          > is the file boundary — without it the server falls back to whichever directory the client
-          happened to start it in.
+        <p class="mt-3 text-small leading-relaxed text-ink-soft">
+          This uses Zed's <code>context_servers</code> schema. Keep <code>uvx</code> on the client's{
+            " "
+          }
+          <code>PATH</code> and replace <code>MSMCP_ALLOWED_ROOT</code> with the directory containing
+          the files the server may read. Other stdio MCP clients use the same command and arguments in
+          their own configuration format.
         </p>
       </div>
     </div>
@@ -594,8 +521,7 @@ const docs = [
       =================================================================== */
   }
   <section id="tools" class="shell scroll-mt-24 pb-16 md:pb-24">
-    <p class="eyebrow">Tools</p>
-    <h2 class="mt-3 max-w-3xl rule-heading">Fourteen tools, one question each.</h2>
+    <h2 class="section-heading">15 tools, one question each.</h2>
     <p class="mt-4 max-w-3xl leading-relaxed text-ink-soft">
       Every call below is the signature the server actually advertises, with the argument names and
       defaults a client receives from <code>tools/list</code>. Tools that take a spectrum you have
@@ -606,7 +532,7 @@ const docs = [
       {
         toolGuide.map((group) => (
           <section aria-labelledby={`tools-${group.id}`}>
-            <h3 id={`tools-${group.id}`} class="text-[0.85rem] font-semibold text-head">
+            <h3 id={`tools-${group.id}`} class="text-small font-semibold text-head">
               {group.area}
             </h3>
             <dl class="mt-3">
@@ -615,13 +541,13 @@ const docs = [
                   class="grid gap-1 border-t border-line-soft py-4 sm:grid-cols-[13rem_1fr] sm:gap-6"
                   data-tool={tool.name}
                 >
-                  <dt class="font-mono text-[0.82rem] font-medium text-head">{tool.name}</dt>
+                  <dt class="font-mono text-note font-medium text-head">{tool.name}</dt>
                   <dd class="min-w-0">
-                    <p class="text-[0.9rem] text-ink">{tool.ask}</p>
-                    <div class="mono-block mt-2 p-3 text-[0.78rem] whitespace-pre-wrap [overflow-wrap:anywhere]">
+                    <p class="text-small text-ink">{tool.ask}</p>
+                    <div class="mono-block mt-2 p-3 text-note whitespace-pre-wrap [overflow-wrap:anywhere]">
                       <code>{tool.call}</code>
                     </div>
-                    <p class="mt-2 text-[0.82rem] leading-relaxed text-ink-soft">{tool.returns}</p>
+                    <p class="mt-2 text-note leading-relaxed text-ink-soft">{tool.returns}</p>
                   </dd>
                 </div>
               ))}
@@ -631,10 +557,12 @@ const docs = [
       }
     </div>
 
-    <p class="mt-7 text-[0.82rem] leading-relaxed text-ink-mute">
-      Only <code>cancel_search</code> and <code>release_reference</code> change server state, and both
-      advertise that on the wire so a host can gate them. Parameter bounds, defaults and validation live
-      in the server's own tool schemas — this list is the map, the README is the reference.
+    <p class="mt-7 text-note leading-relaxed text-ink-mute">
+      <code>search_library</code> dispatches an in-memory job. <code>cancel_search</code>{" "}and{
+        " "
+      }
+      <code>release_reference</code> are the tools marked state-changing in the MCP annotations; search
+      results are candidate rankings, with no calibrated p-values, q-values or FDR.
     </p>
   </section>
 
@@ -644,11 +572,10 @@ const docs = [
       =================================================================== */
   }
   <section id="docs" class="shell scroll-mt-24 pb-8">
-    <p class="eyebrow">Documentation & links</p>
-    <h2 class="mt-3 rule-heading">Everything authoritative lives with the code.</h2>
+    <h2 class="section-heading">Everything authoritative lives with the code.</h2>
     <p class="mt-4 max-w-3xl leading-relaxed text-ink-soft">
-      There is no separate documentation site, because two copies of a contract drift. Each link
-      below goes to a maintained file in the repository.
+      The package, release notes and scientific documentation are pinned to 1.0.2 so their contracts
+      stay aligned with this page.
     </p>
 
     <ul class="mt-7 grid gap-3 sm:grid-cols-2">
@@ -661,15 +588,36 @@ const docs = [
               target="_blank"
               rel="noopener"
             >
-              <span class="text-[0.9rem] font-semibold text-ink">{d.label}</span>
-              <span class="font-mono text-[0.72rem] text-ink-mute">{d.note} ↗</span>
+              <span class="text-small font-semibold text-ink">{d.label}</span>
+              <span class="font-mono text-note text-ink-mute">{d.note} ↗</span>
             </a>
           </li>
         ))
       }
     </ul>
 
-    <p class="mt-6 text-[0.88rem] text-ink-soft">
+    <h3 class="mt-10 text-small font-semibold uppercase tracking-[0.14em] text-ink-mute">
+      Reproducible examples
+    </h3>
+    <ul class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {
+        reproducibleExamples.map((example, index) => (
+          <li data-example={index + 1}>
+            <a
+              class="card flex h-full flex-col gap-2 p-4 transition-colors hover:border-accent"
+              href={example.href}
+              target="_blank"
+              rel="noopener"
+            >
+              <span class="text-small font-semibold text-ink">{example.title}</span>
+              <span class="text-note leading-relaxed text-ink-mute">{example.note}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <p class="mt-6 text-small text-ink-soft">
       <span class="font-semibold text-ink">Contact.</span> There is no mailing list and no contact form.
       Bug reports, questions and feature discussion belong in{" "}
       <a class="prose-link" href={`${REPO}/issues`}>GitHub Issues</a>, where the answer stays
