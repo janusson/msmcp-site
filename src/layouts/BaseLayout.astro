@@ -51,7 +51,7 @@ const ogImage = new URL("/og.png", Astro.site).toString();
   <body class="min-h-screen">
     <a class="skip-link" href="#main">Skip to content</a>
     <SiteHeader />
-    <main id="main">
+    <main id="main" tabindex="-1">
       <slot />
     </main>
     <SiteFooter />

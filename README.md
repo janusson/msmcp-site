@@ -93,7 +93,9 @@ change, render the page and look at it.** It was checked in headless Chromium at
 ├── Makefile                  # deps / dev / build / check / verify / all
 ├── public/
 │   ├── favicon.svg
-│   └── og.png                # 1200x630 link-preview card, from scripts/make-og-card.py
+│   ├── og.png                # 1200x630 link-preview card, from scripts/make-og-card.py
+│   ├── robots.txt
+│   └── sitemap.xml
 ├── scripts/
 │   ├── make-og-card.py       # regenerates og.png by hand when the headline changes
 │   └── verify-build.mjs      # post-build contract checks
@@ -255,7 +257,7 @@ claim cannot be reproduced, it comes off the page rather than getting softened.
   reach a screen reader.
 - Colour contrast targets WCAG AA against the dark canvas; the palette is a dark
   sibling of the personal site's Kanagawa Dragon tokens rather than a copy.
-- No JavaScript, no web fonts beyond two families, one HTML document (~28 KB) and
+- No JavaScript, no web fonts beyond two families, one HTML document (~52 KB) and
   one small CSS file. `prefers-reduced-motion` is respected (there is no animation
   to disable, but smooth scrolling is switched off for users who ask).
 
