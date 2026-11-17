@@ -33,7 +33,7 @@ backend, no contact form, no separate documentation engine.
 
 ## Local development
 
-Requires Node 20+ (CI uses 24).
+Requires Node 22.12+ (`.node-version` and CI use 24).
 
 ```bash
 make deps          # npm install, stamped so it only runs when package files change
@@ -220,37 +220,31 @@ Settings → Pages.
 Where the load-bearing content lives, and what has to be re-checked when MSMCP
 changes:
 
-| Content                                          | Lives in                                                                 | Re-check when                                                                                                                                                             |
-| ------------------------------------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The transcribed workflow, hit table, and timings | `src/pages/index.astro` — the `hits` array and the transcript markup     | `search_library` scoring, the report format, or the null model changes. The numbers came from a single recorded run (see below); they are a record, not a live benchmark. |
-| The isotope envelope                             | `src/components/IsotopeFigure.astro` — the `peaks` array                 | `annotate_isotopes` maths changes. Re-run the tool and paste its output.                                                                                                  |
-| The tool list                                    | `src/pages/index.astro` — `tools`; guarded by `scripts/verify-build.mjs` | A tool is added, renamed or removed in `src/msmcp/tools/`.                                                                                                                |
-| Install commands                                 | `src/pages/index.astro` — `installSnippet`                               | The distribution story changes (PyPI, `server.json`, a container).                                                                                                        |
-| Document links                                   | `src/pages/index.astro` — `docs`                                         | A file is renamed or moved in the MSMCP repository.                                                                                                                       |
+| Content                                | Lives in                                                                     | Re-check when                                                                             |
+| -------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| The synthetic caffeine example         | `src/pages/index.astro` — `#example` section                                 | `examples/` fixtures or `search_library` report formatting changes in the tagged release. |
+| The isotope envelope                   | `src/components/IsotopeFigure.astro` — the `peaks` array                     | `annotate_isotopes` maths changes. Re-run the tool and paste its output.                  |
+| The tool list                          | `src/pages/index.astro` — `toolGuide`; guarded by `scripts/verify-build.mjs` | A tool is added, renamed or removed in `src/msmcp/tools/`.                                |
+| Install commands                       | `src/pages/index.astro` — `installSnippet`, `claudeSnippet`, `zedSnippet`    | The distribution story changes (PyPI version, extras, client schema).                     |
+| Instrument classes & env configuration | `src/pages/index.astro` — `instrumentClasses`, `envVars`                     | Defaults in `src/msmcp/instruments.py` or `README.md` change.                             |
+| Document links                         | `src/pages/index.astro` — `docs`                                             | A file is renamed or moved in the MSMCP repository.                                       |
 
 **Cardinal rule for edits:** every number and every code block on the page must be
 something the software actually printed or a file that actually exists. No
 benchmark, testimonial, adoption figure or security guarantee is invented. If a
 claim cannot be reproduced, it comes off the page rather than getting softened.
 
-## Provenance of the example on the page
+## Provenance of the examples on the page
 
-The workflow in the "Example" section is a real run, not an illustration:
-
-- **Query:** spectrum #966 of a Bruker maXis LC–MS/MS acquisition (RT 3.795 min,
-  precursor m/z 315.2321, 220 peaks). The acquisition's filename is deliberately
-  not published on the page.
-- **Library:** MassBank's public MSP library, 63,879 spectra, read from disk
-  through the same `SecurityPolicy` as the query.
-- **Scoring:** `classical` — greedy peak matching, ±0.02 Da — with the report's own
-  FDR threshold. Top candidate 0.8309 cosine, q = 0.0125; the runner-ups are
-  progesterone, a constitutional isomer at the same precursor m/z.
-- **The ppm verdict** (0.32 ppm) was produced by calling `validate_precursor`
-  against MassBank's reference mass, and is reproducible in one tool call.
-- **The isotope envelope** is `annotate_isotopes("C6H12O6")` output, transcribed
-  without rounding. Note that the MSMCP README's inline example of this tool shows
-  older values (`M+1` at 181.0721, `[M+H]+` at +1.006728 Da); the tool itself
-  prints 181.0668 and +1.007276 Da, which is what the page uses.
+- **Library search demo:** reproduces the synthetic caffeine fixture shipped in
+  release `1.0.2` (`examples/caffeine_spectrum.mgf` against
+  `examples/caffeine_library.msp`). Because the query duplicates a library record,
+  this verifies tool mechanics only — not identification accuracy or statistical
+  significance (production `search_library` does not report p-values, q-values,
+  or calibrated FDR).
+- **The isotope envelope** is `annotate_isotopes("C6H12O6", isotopologues=3)` output
+  from `1.0.2` (`M` at `180.0634`, `M+1` at `181.0668` / `0.0686`, `M+2` at
+  `182.0680` / `0.0143`), matching `SCIENTIFIC_VALIDATION.md` without rounding.
 
 ## Accessibility and performance notes
 

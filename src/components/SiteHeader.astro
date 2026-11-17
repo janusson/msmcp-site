@@ -2,16 +2,12 @@
 // Sticky single-row header.  No JavaScript: on narrow screens the secondary
 // links wrap onto a second line rather than hiding behind a drawer, so every
 // destination stays reachable with the keyboard and with JS disabled.
-const links = [
+const links: { href: string; label: string; external?: boolean }[] = [
   { href: "#example", label: "Example" },
   { href: "#why", label: "Why MSMCP" },
   { href: "#get-started", label: "Get started" },
   { href: "#tools", label: "Tools" },
-  {
-    href: "https://github.com/janusson/MSMCP/blob/1.0.2/README.md#try-it-in-60-seconds",
-    label: "Docs",
-    external: true,
-  },
+  { href: "#docs", label: "Docs" },
 ];
 ---
 

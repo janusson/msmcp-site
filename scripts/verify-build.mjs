@@ -112,22 +112,58 @@ check(
   html.includes(installCommand) && !/git clone https:\/\/github\.com\/janusson\/MSMCP/i.test(html),
   "the first-screen command must install the published 1.0.2 distribution",
 );
-const configMarker = html.indexOf("&quot;context_servers&quot;");
-const configTagStart = html.lastIndexOf("<code", configMarker);
-const configContentStart = html.indexOf(">", configTagStart) + 1;
-const configContentEnd = html.indexOf("</code>", configMarker);
-let parsedClientConfig;
-try {
-  parsedClientConfig = JSON.parse(
-    html.slice(configContentStart, configContentEnd).replaceAll("&quot;", '"'),
-  );
-} catch {}
-const zedServer = parsedClientConfig?.context_servers?.msmcp;
+const parseJsonCodeBlock = (marker) => {
+  const idx = html.indexOf(marker);
+  if (idx === -1) return undefined;
+  const tagStart = html.lastIndexOf("<code", idx);
+  const contentStart = html.indexOf(">", tagStart) + 1;
+  const contentEnd = html.indexOf("</code>", idx);
+  try {
+    return JSON.parse(html.slice(contentStart, contentEnd).replaceAll("&quot;", '"'));
+  } catch {
+    return undefined;
+  }
+};
+
+const zedServer = parseJsonCodeBlock("&quot;context_servers&quot;")?.context_servers?.msmcp;
 check(
   "Zed stdio configuration is valid JSON and uses the pinned package command",
   zedServer?.command === "uvx" &&
     zedServer?.args?.join(" ") === "--python 3.13 --from msmcp==1.0.2 msmcp" &&
     zedServer?.env?.MSMCP_ALLOWED_ROOT === "/absolute/path/to/ms-data",
+);
+const mcpServer = parseJsonCodeBlock("&quot;mcpServers&quot;")?.mcpServers?.msmcp;
+check(
+  "Standard mcpServers configuration is valid JSON and uses the pinned package command",
+  mcpServer?.command === "uvx" &&
+    mcpServer?.args?.join(" ") === "--python 3.13 --from msmcp==1.0.2 msmcp" &&
+    mcpServer?.env?.MSMCP_ALLOWED_ROOT === "/absolute/path/to/ms-data",
+);
+const INSTRUMENT_CLASSES = ["generic", "orbitrap", "tof", "ion_trap", "triple_quad"];
+const missingClasses = INSTRUMENT_CLASSES.filter((c) => !html.includes(c));
+check(
+  `all ${INSTRUMENT_CLASSES.length} instrument classes are documented`,
+  missingClasses.length === 0,
+  missingClasses.join(", "),
+);
+const ENV_VARS = [
+  "MSMCP_ALLOWED_ROOT",
+  "MSMCP_MAX_FILE_SIZE_BYTES",
+  "MSMCP_MAX_SPECTRA",
+  "MSMCP_MAX_REFERENCES",
+  "MSMCP_MAX_TOTAL_BYTES",
+  "MSMCP_REFERENCE_TTL_SECONDS",
+  "MSMCP_EMBEDDING_BACKEND",
+];
+const missingEnvVars = ENV_VARS.filter((v) => !html.includes(v));
+check(
+  `core configuration variables are documented (${ENV_VARS.length} checked)`,
+  missingEnvVars.length === 0,
+  missingEnvVars.join(", "),
+);
+check(
+  "isotope figure states 0–0.10 (×10) scale rather than ×100",
+  html.includes("0–0.10") && !/×100|one-hundred-fold/i.test(html),
 );
 check(
   "synthetic search example is explicitly not an identification",
@@ -150,10 +186,11 @@ check(
   !/63,879|94\.9 s|q\s*≤\s*0\.05|EQ362902|Δ⁹-THC|0\.0125/.test(html),
 );
 check(
-  "PyPI release, GitHub release, and validation document are linked",
+  "PyPI release, GitHub release, validation, and chromatogram docs are linked",
   html.includes("https://pypi.org/project/msmcp/1.0.2/") &&
     html.includes("https://github.com/janusson/MSMCP/releases/tag/1.0.2") &&
-    html.includes("https://github.com/janusson/MSMCP/blob/1.0.2/SCIENTIFIC_VALIDATION.md"),
+    html.includes("https://github.com/janusson/MSMCP/blob/1.0.2/SCIENTIFIC_VALIDATION.md") &&
+    html.includes("https://github.com/janusson/MSMCP/blob/1.0.2/docs/chromatograms.md"),
 );
 const examples = [...html.matchAll(/data-example="(\d+)"/g)].map((m) => m[1]);
 check(
