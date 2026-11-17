@@ -19,17 +19,23 @@ portal, not a blog, and not a marketing site.
 
 ## Project status — 2026-11-17
 
-**Website complete; maintenance only.** The live site presents MSMCP 1.0.2 and
-its 15 tools. At the completion review, the deployed baseline was [bd18245](https://github.com/janusson/msmcp-site/commit/bd1824504d68c75105c09f700831a98f3f553d51).
-Its [deployment run](https://github.com/janusson/msmcp-site/actions/runs/44147563916)
-passed the gate, build and deployment, including 36 post-build verification checks.
-There were zero open pull requests at that review.
+**Completed development (maintenance mode):** The live site presents MSMCP `1.0.2`
+and its 15 tools (`bd18245` / [deploy run 44147563916](https://github.com/janusson/msmcp-site/actions/runs/44147563916),
+passing Gate, Build, Deploy, and 36 post-build checks). Reproducible offline
+scientific examples and their smoke test were migrated upstream to
+[`janusson/MSMCP#105`](https://github.com/janusson/MSMCP/pull/105) (`0aedae4`),
+and the superseded `codex/scientific-examples` branch was removed.
 
-**Tracked maintenance:** [issue #12](https://github.com/janusson/msmcp-site/issues/12)
-remains open for the `picomatch` dev/build dependency advisory
-[GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf).
-No patched version was listed as of this review. The static site has no Node.js
-runtime, but the dependency remains relevant to the build environment.
+**Ongoing dependency maintenance:** [`.github/dependabot.yml`](.github/dependabot.yml)
+and [`.github/workflows/weekly-maintenance.yml`](.github/workflows/weekly-maintenance.yml)
+run weekly checks (`astro@7.4.12` via `#15`, `@tailwindcss/vite@4.3.5` via `#17`,
+`tailwindcss@4.3.5` via `#13`). [Issue #12](https://github.com/janusson/msmcp-site/issues/12)
+remains open tracking upstream `picomatch` advisory
+[`GHSA-fc5q-39xc-vjpf`](https://github.com/advisories/GHSA-fc5q-39xc-vjpf)
+(no patched release available; 12 build/dev dependency findings under
+`astro@7.4.12`, zero runtime exposure on the static site). Incompatible major
+Dependabot PRs `#14` (`prettier-plugin-astro 1.1.2`) and `#16` (`typescript 7.0.2`)
+remain unmerged on account of failing Gate checks.
 
 ---
 
