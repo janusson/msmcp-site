@@ -17,6 +17,20 @@ portal, not a blog, and not a marketing site.
 **Live at:** https://msmcp.dev — deployed from this repository to GitHub Pages
 (see [Deployment](#deployment))
 
+## Project status — 2026-11-17
+
+**Website complete; maintenance only.** The live site presents MSMCP 1.0.2 and
+its 15 tools. At the completion review, the deployed baseline was [bd18245](https://github.com/janusson/msmcp-site/commit/bd1824504d68c75105c09f700831a98f3f553d51).
+Its [deployment run](https://github.com/janusson/msmcp-site/actions/runs/44147563916)
+passed the gate, build and deployment, including 36 post-build verification checks.
+There were zero open pull requests at that review.
+
+**Tracked maintenance:** [issue #12](https://github.com/janusson/msmcp-site/issues/12)
+remains open for the `picomatch` dev/build dependency advisory
+[GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf).
+No patched version was listed as of this review. The static site has no Node.js
+runtime, but the dependency remains relevant to the build environment.
+
 ---
 
 ## Stack
