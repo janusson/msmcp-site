@@ -17,6 +17,26 @@ portal, not a blog, and not a marketing site.
 **Live at:** https://msmcp.dev — deployed from this repository to GitHub Pages
 (see [Deployment](#deployment))
 
+## Project status — 2026-11-17
+
+**Completed development (maintenance mode):** The live site presents MSMCP `1.0.2`
+and its 15 tools (`bd18245` / [deploy run 44147563916](https://github.com/janusson/msmcp-site/actions/runs/44147563916),
+passing Gate, Build, Deploy, and 36 post-build checks). Reproducible offline
+scientific examples and their smoke test were migrated upstream to
+[`janusson/MSMCP#105`](https://github.com/janusson/MSMCP/pull/105) (`0aedae4`),
+and the superseded `codex/scientific-examples` branch was removed.
+
+**Ongoing dependency maintenance:** [`.github/dependabot.yml`](.github/dependabot.yml)
+and [`.github/workflows/weekly-maintenance.yml`](.github/workflows/weekly-maintenance.yml)
+run weekly checks (`astro@7.4.12` via `#15`, `@tailwindcss/vite@4.3.5` via `#17`,
+`tailwindcss@4.3.5` via `#13`). [Issue #12](https://github.com/janusson/msmcp-site/issues/12)
+remains open tracking upstream `picomatch` advisory
+[`GHSA-fc5q-39xc-vjpf`](https://github.com/advisories/GHSA-fc5q-39xc-vjpf)
+(no patched release available; 12 build/dev dependency findings under
+`astro@7.4.12`, zero runtime exposure on the static site). Incompatible major
+Dependabot PRs `#14` (`prettier-plugin-astro 1.1.2`) and `#16` (`typescript 7.0.2`)
+remain unmerged on account of failing Gate checks.
+
 ---
 
 ## Stack
@@ -37,24 +57,40 @@ Requires Node 22.12+ (`.node-version` and CI use 24).
 
 ```bash
 make deps          # npm install, stamped so it only runs when package files change
+make ci-deps       # clean lockfile install (npm ci), matching CI
 make dev           # Astro dev server with HMR at http://localhost:4321
 make build         # static build into dist/
 make preview       # serve the production build locally
 ```
 
-The gate, in the order CI runs it:
+The offline gate, in the order CI runs it:
 
 ```bash
-make check         # astro check (types) + prettier --check   — fast, no build
-make verify        # build, then assert the built HTML        — the real gate
-make all           # check, then verify
+make check         # astro check + prettier --check + unit/contract tests — fast, no build
+make verify        # build, then assert HTML, asset, security, and a11y contracts
+make test          # unit tests + build verification
+make all           # check, then verify (deterministic offline CI gate)
 ```
 
-`scripts/verify-build.mjs` is a post-build contract check rather than a unit-test
-suite, because this project has no application logic to unit-test. It asserts the
-things that break silently on a static page making claims about software:
+Optional maintenance targets (dependency audit and live network checks):
 
-- exactly one `<h1>`, a `lang`, and a meta description;
+```bash
+make deps-sync     # verify package-lock.json satisfies package.json (offline)
+make audit         # run npm security audit (exits non-zero on findings)
+make outdated      # list outdated direct/transitive npm packages
+make check-links   # verify external HTTPS links in built HTML resolve (networked)
+```
+
+`tests/site-contracts.test.mjs` uses Node's built-in test runner (`node --test`) to
+exercise security/regression cases and lockfile/config invariants without needing a
+prior build, while `scripts/verify-build.mjs` verifies the built `dist/` output
+directly:
+
+- zero `<script>` tags, zero JavaScript bundles in `dist/`, no inline `on*=` handlers,
+  and no `javascript:` / `vbscript:` / `data:text/html` URIs;
+- semantic landmarks (`<main id="main" tabindex="-1">` skip target, distinct `<nav>`
+  `aria-label`s), non-skipping heading levels, zero duplicate IDs, and resolvable local
+  assets (`og:image`, stylesheets, icons, `robots.txt`, `sitemap.xml`);
 - **every in-page `#anchor` resolves** — a dead nav link is the most likely
   regression on a one-page site;
 - **every registered MSMCP tool name still appears**, and the tools reference has
@@ -90,15 +126,18 @@ change, render the page and look at it.** It was checked in headless Chromium at
 ```
 .
 ├── astro.config.mjs          # `site` origin — the single source of the canonical URL
-├── Makefile                  # deps / dev / build / check / verify / all
+├── Makefile                  # deps / dev / build / check / verify / test / all / maintenance
 ├── public/
 │   ├── favicon.svg
 │   ├── og.png                # 1200x630 link-preview card, from scripts/make-og-card.py
 │   ├── robots.txt
 │   └── sitemap.xml
 ├── scripts/
+│   ├── check-links.mjs       # external HTTPS link resolver (`make check-links`)
 │   ├── make-og-card.py       # regenerates og.png by hand when the headline changes
-│   └── verify-build.mjs      # post-build contract checks
+│   └── verify-build.mjs      # post-build HTML, asset, security, and a11y verifier
+├── tests/
+│   └── site-contracts.test.mjs # offline regression and lockfile/config tests (`node --test`)
 ├── src/
 │   ├── components/
 │   │   ├── IsotopeFigure.astro   # glucose isotope envelope, from real tool output

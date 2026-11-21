@@ -5,8 +5,12 @@
 # target depends on the install stamp, so a missing or stale node_modules
 # cannot produce a confusing "command not found".
 #
-#   make check    fast, build-free: types + formatting
-#   make verify   build the site, then assert the built HTML is sound
+#   make check         fast, build-free: types + formatting + unit tests
+#   make verify        build the site, then assert built HTML/assets/security
+#   make test          run unit tests and post-build contract verification
+#   make all           deterministic offline gate (used by CI)
+#   make audit         npm vulnerability check (networked)
+#   make check-links   verify external HTTPS URLs in built HTML (networked)
 # ─────────────────────────────────────────────────────────────────────────────
 
 .DEFAULT_GOAL := help
@@ -14,7 +18,7 @@
 NODE_BIN := ./node_modules/.bin
 STAMP := node_modules/.install-stamp
 
-.PHONY: help deps dev preview lint format-check format-fix test verify build clean check all
+.PHONY: help deps ci-deps deps-sync dev preview lint format-check format-fix unit-test test verify build clean clean-all check audit outdated check-links all
 
 ## help          Show this help
 help:
@@ -28,6 +32,15 @@ deps: $(STAMP)
 $(STAMP): package.json package-lock.json
 	npm install --no-audit --no-fund
 	@touch $(STAMP)
+
+## ci-deps       Install exact lockfile versions cleanly (like CI)
+ci-deps:
+	npm ci --no-audit --no-fund
+	@touch $(STAMP)
+
+## deps-sync     Verify package-lock.json satisfies package.json (offline)
+deps-sync: $(STAMP)
+	npm ci --dry-run --ignore-scripts --no-audit --no-fund --offline
 
 ## dev           Run the Astro dev server
 dev: $(STAMP)
@@ -53,22 +66,42 @@ format-fix: $(STAMP)
 build: $(STAMP)
 	npm run build
 
-## test          Verify the built HTML (runs a build first)
-test: verify
+## unit-test     Run fast offline unit and repo-contract tests
+unit-test: $(STAMP)
+	node --test tests/*.test.mjs
 
-## verify        Build, then assert anchors, links, tool names and metadata
+## verify        Build, then assert HTML, asset, security, and a11y contracts
 verify: build
 	node scripts/verify-build.mjs
 
-## check         Fast pre-commit gate: types + formatting, no build
-check: lint format-check
+## test          Run unit tests, build, and post-build contract verification
+test: unit-test verify
+
+## check         Fast pre-commit gate: types, formatting, and unit tests
+check: lint format-check unit-test
+
+## audit         Run npm security advisory audit (exits non-zero on findings)
+audit: $(STAMP)
+	npm audit
+
+## outdated      Show outdated npm dependencies (informational report)
+outdated: $(STAMP)
+	npm outdated || true
+
+## check-links   Verify external HTTPS links in dist/index.html resolve
+check-links: build
+	node scripts/check-links.mjs
 
 ## clean         Remove build output and caches
 clean:
 	rm -rf dist .astro
 	find public -name ".DS_Store" -type f -delete
 
-## all           Full pipeline: check, verify
+## clean-all     Remove build output, caches, and node_modules
+clean-all: clean
+	rm -rf node_modules
+
+## all           Full offline pipeline: check, verify
 all: check verify
 	@echo ""
 	@echo "  All checks passed."
