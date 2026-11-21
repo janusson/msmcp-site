@@ -46,18 +46,17 @@ const description =
 
   <div role="img" aria-label={description}>
     <div class="relative h-32 border-b border-l border-line" aria-hidden="true">
-      {
-        peaks.map((p) => (
-          <span
-            class="absolute bottom-0 w-[2px] -translate-x-1/2"
-            style={`left:${xPercent(p.mz)}%;height:${fullHeight(p.abundance)}%;background:var(--color-accent);`}
-          />
-        ))
-      }
+      {peaks.map((p) => (
+        <span
+          class="absolute bottom-0 w-[2px] -translate-x-1/2"
+          style={`left:${xPercent(p.mz)}%;height:${fullHeight(p.abundance)}%;background:var(--color-accent);`}
+        />
+      ))}
       <!-- 50 % abundance guide -->
       <span
         class="absolute left-0 right-0 border-t border-dashed border-line-soft"
-        style="bottom:50%;"></span>
+        style="bottom:50%;"
+      ></span>
     </div>
 
     <!-- Labels are positioned from the same m/z axis as the sticks: evenly
@@ -65,21 +64,19 @@ const description =
          left-anchored rather than centred so it never clips past the axis on
          narrow viewports. -->
     <div class="relative mt-1.5 h-9 text-note leading-tight text-ink-mute" aria-hidden="true">
-      {
-        peaks.map((p, index) => (
-          <span
-            class="absolute flex flex-col font-mono whitespace-nowrap"
-            style={
-              index === 0
-                ? `left:${xPercent(p.mz)}%;`
-                : `left:${xPercent(p.mz)}%;transform:translateX(-50%);text-align:center;`
-            }
-          >
-            <span>{p.label}</span>
-            <span>{p.mz.toFixed(4)}</span>
-          </span>
-        ))
-      }
+      {peaks.map((p, index) => (
+        <span
+          class="absolute flex flex-col font-mono whitespace-nowrap"
+          style={
+            index === 0
+              ? `left:${xPercent(p.mz)}%;`
+              : `left:${xPercent(p.mz)}%;transform:translateX(-50%);text-align:center;`
+          }
+        >
+          <span>{p.label}</span>
+          <span>{p.mz.toFixed(4)}</span>
+        </span>
+      ))}
     </div>
 
     <div class="mt-4 flex flex-wrap items-baseline justify-between gap-2" aria-hidden="true">
@@ -90,26 +87,20 @@ const description =
     </div>
 
     <div class="relative mt-2.5 h-24 border-b border-l border-line" aria-hidden="true">
-      {
-        peaks
-          .slice(1)
-          .map((p) => (
-            <span
-              class="absolute bottom-0 w-[2px] -translate-x-1/2"
-              style={`left:${xPercent(p.mz)}%;height:${zoomHeight(p.abundance)}%;background:var(--color-accent);`}
-            />
-          ))
-      }
-      {
-        peaks.slice(1).map((p) => (
-          <span
-            class="absolute font-mono text-note text-accent-ink"
-            style={`left:${xPercent(p.mz)}%;bottom:${zoomHeight(p.abundance)}%;transform:translate(-50%,-0.3rem);`}
-          >
-            {p.abundance.toFixed(4)}
-          </span>
-        ))
-      }
+      {peaks.slice(1).map((p) => (
+        <span
+          class="absolute bottom-0 w-[2px] -translate-x-1/2"
+          style={`left:${xPercent(p.mz)}%;height:${zoomHeight(p.abundance)}%;background:var(--color-accent);`}
+        />
+      ))}
+      {peaks.slice(1).map((p) => (
+        <span
+          class="absolute font-mono text-note text-accent-ink"
+          style={`left:${xPercent(p.mz)}%;bottom:${zoomHeight(p.abundance)}%;transform:translate(-50%,-0.3rem);`}
+        >
+          {p.abundance.toFixed(4)}
+        </span>
+      ))}
     </div>
   </div>
 

@@ -15,24 +15,20 @@ const links: { href: string; label: string; external?: boolean }[] = [
   <nav class="shell flex flex-wrap items-center gap-x-5 gap-y-1 py-3" aria-label="Primary">
     <a href="#top" class="mr-auto flex items-baseline gap-2 text-ink hover:text-accent-ink">
       <span class="font-mono text-lead font-semibold tracking-tight text-head">MSMCP</span>
-      <span class="hidden text-note text-ink-mute sm:inline">
-        MCP server for mass spectrometry
-      </span>
+      <span class="hidden text-note text-ink-mute sm:inline">MCP server for mass spectrometry</span>
     </a>
 
-    {
-      links.map((l) => (
-        <a
-          href={l.href}
-          target={l.external ? "_blank" : undefined}
-          rel={l.external ? "noopener" : undefined}
-          class="text-small font-medium text-ink-soft hover:text-accent-ink"
-        >
-          {l.label}
-          {l.external && <span aria-hidden="true"> ↗</span>}
-        </a>
-      ))
-    }
+    {links.map((l) => (
+      <a
+        href={l.href}
+        target={l.external ? "_blank" : undefined}
+        rel={l.external ? "noopener" : undefined}
+        class="text-small font-medium text-ink-soft hover:text-accent-ink"
+      >
+        {l.label}
+        {l.external && <span aria-hidden="true"> ↗</span>}
+      </a>
+    ))}
 
     <a
       href="https://github.com/janusson/MSMCP"

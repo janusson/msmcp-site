@@ -387,19 +387,15 @@ const docs = [
 ---
 
 <BaseLayout title={title} description={description}>
-  {
-    /* ===================================================================
+  {/* ===================================================================
       Hero
-      =================================================================== */
-  }
+      =================================================================== */}
   <section id="top" class="shell pt-14 pb-16 md:pt-20 md:pb-20">
     <div class="grid gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
       <div class="min-w-0">
         <p class="eyebrow">Open-source MCP server · Mass spectrometry</p>
 
-        <h1
-          class="mt-5 text-balance text-display font-bold leading-[1.12] tracking-[-0.02em] text-head"
-        >
+        <h1 class="mt-5 text-balance text-display font-bold leading-[1.12] tracking-[-0.02em] text-head">
           Ask your AI assistant about your mass spectrometry data.
         </h1>
 
@@ -421,7 +417,10 @@ const docs = [
           <a class="btn btn-primary" href="#get-started">
             Get started <span aria-hidden="true">→</span>
           </a>
-          <a class="btn btn-ghost" href="#example"> See an example </a>
+          <a class="btn btn-ghost" href="#example">
+            {" "}
+            See an example{" "}
+          </a>
         </div>
 
         <ul class="mt-8 flex flex-wrap gap-2">
@@ -438,18 +437,17 @@ const docs = [
           <p class="text-note font-medium text-ink-mute">Run it now</p>
           <pre
             class="mono-block mt-2 p-3 text-note whitespace-pre-wrap [overflow-wrap:anywhere]"
-            aria-label="Install commands"><code>{installSnippet}</code></pre>
+            aria-label="Install commands"
+          ><code>{installSnippet}</code></pre>
         </div>
         <ReferenceFlow />
       </div>
     </div>
   </section>
 
-  {
-    /* ===================================================================
+  {/* ===================================================================
       Example
-      =================================================================== */
-  }
+      =================================================================== */}
   <section id="example" class="shell scroll-mt-24 pb-16 md:pb-24">
     <p class="eyebrow">Reproducible demo · release 1.0.2</p>
     <h2 class="mt-3 section-heading">A synthetic library search, not a chemical finding.</h2>
@@ -468,12 +466,10 @@ const docs = [
         <div class="space-y-4">
           <div>
             <p class="eyebrow">0 · Prompt to your assistant</p>
-            <div
-              class="mt-2 rounded-lg border border-line bg-panel-soft px-3.5 py-2.5 text-small text-ink"
-            >
+            <div class="mt-2 rounded-lg border border-line bg-panel-soft px-3.5 py-2.5 text-small text-ink">
               &ldquo;Load <code>/data/caffeine_spectrum.mgf</code> and search it against{" "}
-              <code>/data/caffeine_library.msp</code> with{" "}
-              <code>instrument_class="orbitrap"</code>.&rdquo;
+              <code>/data/caffeine_library.msp</code> with <code>instrument_class="orbitrap"</code>
+              .&rdquo;
             </div>
           </div>
           <div>
@@ -485,11 +481,11 @@ const docs = [
           <div>
             <p class="eyebrow">2 · Search and poll</p>
             <div class="mono-block mt-2 p-3 text-note whitespace-pre-wrap [overflow-wrap:anywhere]">
-              <code
-                >search_library(database_file="/data/caffeine_library.msp",
+              <code>
+                search_library(database_file="/data/caffeine_library.msp",
                 spectrum_reference="ptr:spectrum:…", scoring_method="classical",
-                instrument_class="orbitrap")</code
-              >
+                instrument_class="orbitrap")
+              </code>
             </div>
             <div class="mono-block mt-2 p-3 text-note whitespace-pre-wrap [overflow-wrap:anywhere]">
               <code>{`check_search_status(job_id="<job ID returned by search_library>")`}</code>
@@ -507,18 +503,26 @@ const docs = [
                 <caption class="sr-only">Synthetic caffeine library search result</caption>
                 <thead>
                   <tr class="text-note uppercase tracking-wider text-ink-mute">
-                    <th scope="col" class="py-2 pr-3 font-medium">Rank</th>
-                    <th scope="col" class="py-2 pr-3 font-medium">Candidate</th>
-                    <th scope="col" class="py-2 pr-3 text-right font-medium">Score</th>
-                    <th scope="col" class="py-2 text-right font-medium">Precursor m/z</th>
+                    <th scope="col" class="py-2 pr-3 font-medium">
+                      Rank
+                    </th>
+                    <th scope="col" class="py-2 pr-3 font-medium">
+                      Candidate
+                    </th>
+                    <th scope="col" class="py-2 pr-3 text-right font-medium">
+                      Score
+                    </th>
+                    <th scope="col" class="py-2 text-right font-medium">
+                      Precursor m/z
+                    </th>
                   </tr>
                 </thead>
                 <tbody class="font-mono">
                   <tr class="border-t border-line-soft">
                     <td class="py-2 pr-3">1</td>
-                    <td class="py-2 pr-3 font-sans text-ink"
-                      >Caffeine <span class="block text-note text-ink-mute">C8H10N4O2</span></td
-                    >
+                    <td class="py-2 pr-3 font-sans text-ink">
+                      Caffeine <span class="block text-note text-ink-mute">C8H10N4O2</span>
+                    </td>
                     <td class="py-2 pr-3 text-right text-head">1.0000</td>
                     <td class="py-2 text-right text-ink-soft">195.0877</td>
                   </tr>
@@ -533,24 +537,22 @@ const docs = [
         </div>
       </div>
       <div class="border-t border-line-soft px-5 py-4 text-note leading-relaxed text-ink-mute">
-        Reproduce with the <a
-          class="prose-link"
-          href={`${REPO}/tree/1.0.2/examples`}
-          target="_blank"
-          rel="noopener">release 1.0.2 example files</a
-        >. Before ranking, <code>search_library</code> refuses non-MS2 queries, applies the chosen instrument
-        class's precursor tolerance, and excludes records whose polarity, charge or adduct conflicts (entries
-        omitting context remain ranked as <em>unknown</em>). Production search reports
-        similarity-ranked candidates only; it does not report p-values, q-values or calibrated FDR.
+        Reproduce with the{" "}
+        <a class="prose-link" href={`${REPO}/tree/1.0.2/examples`} target="_blank" rel="noopener">
+          release 1.0.2 example files
+        </a>
+        . Before ranking, <code>search_library</code> refuses non-MS2 queries, applies the chosen
+        instrument class's precursor tolerance, and excludes records whose polarity, charge or
+        adduct conflicts (entries omitting context remain ranked as <em>unknown</em>). Production
+        search reports similarity-ranked candidates only; it does not report p-values, q-values or
+        calibrated FDR.
       </div>
     </div>
   </section>
 
-  {
-    /* ===================================================================
+  {/* ===================================================================
       Why MSMCP
-      =================================================================== */
-  }
+      =================================================================== */}
   <section id="why" class="shell scroll-mt-24 pb-16 md:pb-24">
     <h2 class="section-heading">Grounded, deterministic, and honest about its own boundaries.</h2>
     <p class="mt-4 max-w-3xl leading-relaxed text-ink-soft">
@@ -586,9 +588,10 @@ const docs = [
           to an allowed root under size caps. The host still controls the process with your
           permissions, so anyone who can drive that client can drive MSMCP; run it on a machine you
           own, never as a network service. See the{" "}
-          <a class="prose-link" href={`${REPO}/blob/1.0.2/README.md#security-notes`}
-            >security notes</a
-          >.
+          <a class="prose-link" href={`${REPO}/blob/1.0.2/README.md#security-notes`}>
+            security notes
+          </a>
+          .
         </p>
       </article>
     </div>
@@ -601,31 +604,31 @@ const docs = [
         <p class="eyebrow">Also verified in the tree</p>
         <ul class="mt-4 space-y-3 text-small leading-relaxed text-ink-soft">
           <li>
-            <span class="font-mono text-note text-ink">15 tools</span> across inspection, chemistry, similarity,
-            chromatograms, quality control and library search. Their names match the 1.0.2 server's registered
-            tool surface.
+            <span class="font-mono text-note text-ink">15 tools</span> across inspection, chemistry,
+            similarity, chromatograms, quality control and library search. Their names match the
+            1.0.2 server's registered tool surface.
           </li>
           <li>
-            <span class="font-mono text-note text-ink">Readers</span> for mzML (including zlib-compressed
-            arrays, parsed by MSMCP itself), strict MGF, and imzML imaging data through the optional extra.
-            Vendor formats are refused with conversion guidance.
+            <span class="font-mono text-note text-ink">Readers</span> for mzML (including
+            zlib-compressed arrays, parsed by MSMCP itself), strict MGF, and imzML imaging data
+            through the optional extra. Vendor formats are refused with conversion guidance.
           </li>
           <li>
-            <span class="font-mono text-note text-ink">MSP/NIST and MGF libraries</span>{" "}
-            are read from disk behind the same security boundary as an acquisition, so{" "}
-            <code>search_library</code> can search supported local libraries without an upload or hosted
-            service.
+            <span class="font-mono text-note text-ink">MSP/NIST and MGF libraries</span> are read
+            from disk behind the same security boundary as an acquisition, so{" "}
+            <code>search_library</code> can search supported local libraries without an upload or
+            hosted service.
           </li>
           <li>
-            <span class="font-mono text-note text-ink">Similarity validation</span> is documented as PARTIAL:
-            the pinned comparison is reproducible, but it does not establish open-set accuracy or calibrated
-            confidence.
+            <span class="font-mono text-note text-ink">Similarity validation</span> is documented as
+            PARTIAL: the pinned comparison is reproducible, but it does not establish open-set
+            accuracy or calibrated confidence.
           </li>
           <li>
-            <span class="font-mono text-note text-ink">Spectral foundation models</span>{" "}
-            plug in behind one adapter (DreaMS runs real inference; LSM-MS2 awaits public weights). Core
-            MSMCP never requires model weights — and if a model is unavailable it says so rather than
-            returning a number that looks learned.
+            <span class="font-mono text-note text-ink">Spectral foundation models</span> plug in
+            behind one adapter (DreaMS runs real inference; LSM-MS2 awaits public weights). Core
+            MSMCP never requires model weights — and if a model is unavailable it says so rather
+            than returning a number that looks learned.
           </li>
         </ul>
       </div>
@@ -635,9 +638,9 @@ const docs = [
       <div class="card min-w-0 p-5">
         <h3 class="font-mono text-base font-semibold text-head">Instrument-class defaults</h3>
         <p class="mt-2 text-small leading-relaxed text-ink-soft">
-          Tools that apply tolerances accept <code>instrument_class</code> and record the chosen defaults
-          in provenance. Unit-resolution classes use Da rather than ppm because a fixed ppm gate shrinks
-          below 1 Da at small-molecule masses.
+          Tools that apply tolerances accept <code>instrument_class</code> and record the chosen
+          defaults in provenance. Unit-resolution classes use Da rather than ppm because a fixed ppm
+          gate shrinks below 1 Da at small-molecule masses.
         </p>
         <div
           class="mt-4 overflow-x-auto"
@@ -649,33 +652,39 @@ const docs = [
             <caption class="sr-only">MSMCP 1.0.2 instrument class default tolerances</caption>
             <thead>
               <tr class="text-note uppercase tracking-wider text-ink-mute">
-                <th scope="col" class="py-2 pr-3 font-medium">Class</th>
-                <th scope="col" class="py-2 pr-3 font-medium">Precursor</th>
-                <th scope="col" class="py-2 pr-3 font-medium">MS2 / diag.</th>
-                <th scope="col" class="py-2 text-right font-medium">SNR bands</th>
+                <th scope="col" class="py-2 pr-3 font-medium">
+                  Class
+                </th>
+                <th scope="col" class="py-2 pr-3 font-medium">
+                  Precursor
+                </th>
+                <th scope="col" class="py-2 pr-3 font-medium">
+                  MS2 / diag.
+                </th>
+                <th scope="col" class="py-2 text-right font-medium">
+                  SNR bands
+                </th>
               </tr>
             </thead>
             <tbody class="font-mono">
-              {
-                instrumentClasses.map((ic) => (
-                  <tr class="border-t border-line-soft">
-                    <td class="py-2 pr-3">
-                      <div class="text-head">{ic.name}</div>
-                      <div class="font-sans text-note text-ink-mute">{ic.note}</div>
-                    </td>
-                    <td class="py-2 pr-3 text-ink">{ic.precursor}</td>
-                    <td class="py-2 pr-3 text-ink-soft">{ic.ms2}</td>
-                    <td class="py-2 text-right text-ink-soft">{ic.snr}</td>
-                  </tr>
-                ))
-              }
+              {instrumentClasses.map((ic) => (
+                <tr class="border-t border-line-soft">
+                  <td class="py-2 pr-3">
+                    <div class="text-head">{ic.name}</div>
+                    <div class="font-sans text-note text-ink-mute">{ic.note}</div>
+                  </td>
+                  <td class="py-2 pr-3 text-ink">{ic.precursor}</td>
+                  <td class="py-2 pr-3 text-ink-soft">{ic.ms2}</td>
+                  <td class="py-2 text-right text-ink-soft">{ic.snr}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
         <p class="mt-3 text-note leading-relaxed text-ink-mute">
           These are documented conventions, not measured from raw file headers;{" "}
-          <code>compute_cosine</code> also accepts an explicit <code>ms2_tolerance</code> override in
-          Da.
+          <code>compute_cosine</code> also accepts an explicit <code>ms2_tolerance</code> override
+          in Da.
         </p>
       </div>
 
@@ -688,39 +697,40 @@ const docs = [
             class="prose-link"
             href={`${REPO}/blob/1.0.2/SCIENTIFIC_VALIDATION.md`}
             target="_blank"
-            rel="noopener">SCIENTIFIC_VALIDATION.md</a
-          >.
+            rel="noopener"
+          >
+            SCIENTIFIC_VALIDATION.md
+          </a>
+          .
         </p>
         <dl class="mt-4 space-y-3 text-small leading-relaxed">
-          {
-            validationSummary.map((item) => (
-              <div class="border-t border-line-soft pt-3">
-                <dt class="flex flex-wrap items-baseline gap-2">
-                  <span class="font-mono text-note font-semibold text-accent-ink">
-                    {item.status}
-                  </span>
-                  <span class="font-medium text-head">{item.capability}</span>
-                </dt>
-                <dd class="mt-1 text-note text-ink-soft">{item.detail}</dd>
-              </div>
-            ))
-          }
+          {validationSummary.map((item) => (
+            <div class="border-t border-line-soft pt-3">
+              <dt class="flex flex-wrap items-baseline gap-2">
+                <span class="font-mono text-note font-semibold text-accent-ink">{item.status}</span>
+                <span class="font-medium text-head">{item.capability}</span>
+              </dt>
+              <dd class="mt-1 text-note text-ink-soft">{item.detail}</dd>
+            </div>
+          ))}
         </dl>
       </div>
     </div>
   </section>
 
-  {
-    /* ===================================================================
+  {/* ===================================================================
       Get started
-      =================================================================== */
-  }
+      =================================================================== */}
   <section id="get-started" class="shell scroll-mt-24 pb-16 md:pb-24">
     <h2 class="section-heading">Install MSMCP 1.0.2 from PyPI.</h2>
     <p class="mt-4 max-w-3xl leading-relaxed text-ink-soft">
       MSMCP 1.0.2 is published on PyPI and requires Python 3.13 or later. Install it in an isolated
-      environment with <a class="prose-link" href="https://docs.astral.sh/uv/">uv</a>; the command
-      below is pinned to the published version. No API key, account or hosted service is needed.
+      environment with{" "}
+      <a class="prose-link" href="https://docs.astral.sh/uv/">
+        uv
+      </a>
+      ; the command below is pinned to the published version. No API key, account or hosted service
+      is needed.
     </p>
 
     <div class="mt-7 grid gap-6 lg:grid-cols-2">
@@ -731,7 +741,8 @@ const docs = [
           </h3>
           <pre
             class="mono-block mt-3 p-4 text-ink"
-            tabindex="0"><code class="text-ink">{installSnippet}</code></pre>
+            tabindex="0"
+          ><code class="text-ink">{installSnippet}</code></pre>
           <p class="mt-3 text-small leading-relaxed text-ink-soft">
             This is the stdio server command for your MCP host. The release wheel is fetched from
             PyPI into uv's isolated tool environment; source cloning is not required.
@@ -743,16 +754,21 @@ const docs = [
             pip, uv tool &amp; optional extras
           </h3>
           <div class="mono-block mt-3 space-y-1 p-3.5 text-ink" tabindex="0">
-            <div><code class="text-ink">{uvToolSnippet}</code></div>
-            <div><code class="text-ink">{pipInstallSnippet}</code></div>
+            <div>
+              <code class="text-ink">{uvToolSnippet}</code>
+            </div>
+            <div>
+              <code class="text-ink">{pipInstallSnippet}</code>
+            </div>
           </div>
           <dl class="mt-4 space-y-2.5 text-note leading-relaxed text-ink-soft">
             <div>
               <dt class="font-mono text-ink">msmcp[imaging]</dt>
               <dd>
-                Adds imzML (+ <code>.ibd</code>) reading via <code>massflow&gt;=0.1.2,&lt;0.2</code
-                >. Keep separate from the unrelated analytical <code>MassFlow</code> engine; importing
-                the imaging package creates a <code>logs/</code> directory in the working directory.
+                Adds imzML (+ <code>.ibd</code>) reading via <code>massflow&gt;=0.1.2,&lt;0.2</code>
+                . Keep separate from the unrelated analytical <code>MassFlow</code> engine;
+                importing the imaging package creates a <code>logs/</code> directory in the working
+                directory.
               </dd>
             </div>
             <div>
@@ -773,8 +789,8 @@ const docs = [
             <div>
               <dt class="font-mono text-ink">pynumpress</dt>
               <dd>
-                Optional decoder required only if your <code>.mzML</code> files use MS-Numpress compression
-                (zlib-compressed mzML works out of the box).
+                Optional decoder required only if your <code>.mzML</code> files use MS-Numpress
+                compression (zlib-compressed mzML works out of the box).
               </dd>
             </div>
           </dl>
@@ -788,13 +804,12 @@ const docs = [
           </h3>
           <pre
             class="mono-block mt-3 p-4 text-ink"
-            tabindex="0"><code class="text-ink">{claudeSnippet}</code></pre>
+            tabindex="0"
+          ><code class="text-ink">{claudeSnippet}</code></pre>
           <p class="mt-3 text-small leading-relaxed text-ink-soft">
-            Uses the standard <code>mcpServers</code> schema. Keep <code>uvx</code> on the host's{
-              " "
-            }
-            <code>PATH</code> (or pass its full path) and point{" "}
-            <code>MSMCP_ALLOWED_ROOT</code> at the directory containing your acquisitions and libraries.
+            Uses the standard <code>mcpServers</code> schema. Keep <code>uvx</code> on the host's{" "}
+            <code>PATH</code> (or pass its full path) and point <code>MSMCP_ALLOWED_ROOT</code> at
+            the directory containing your acquisitions and libraries.
           </p>
         </div>
 
@@ -804,11 +819,12 @@ const docs = [
           </h3>
           <pre
             class="mono-block mt-3 p-4 text-ink"
-            tabindex="0"><code class="text-ink">{zedSnippet}</code></pre>
+            tabindex="0"
+          ><code class="text-ink">{zedSnippet}</code></pre>
           <p class="mt-3 text-small leading-relaxed text-ink-soft">
             Uses Zed's <code>context_servers</code> schema with the exact same pinned{" "}
-            <code>uvx</code> command and <code>MSMCP_ALLOWED_ROOT</code> boundary. Once connected, ask
-            your assistant to run <code>ping</code> or inspect a file inside the allowed root.
+            <code>uvx</code> command and <code>MSMCP_ALLOWED_ROOT</code> boundary. Once connected,
+            ask your assistant to run <code>ping</code> or inspect a file inside the allowed root.
           </p>
         </div>
       </div>
@@ -817,8 +833,8 @@ const docs = [
     <div class="card mt-8 p-5">
       <h3 class="font-mono text-base font-semibold text-head">Environment configuration</h3>
       <p class="mt-2 text-small leading-relaxed text-ink-soft">
-        Every runtime limit has a conservative default; if <code>MSMCP_ALLOWED_ROOT</code> is unset, it
-        defaults to the server's working directory. Set these in your MCP client's{" "}
+        Every runtime limit has a conservative default; if <code>MSMCP_ALLOWED_ROOT</code> is unset,
+        it defaults to the server's working directory. Set these in your MCP client's{" "}
         <code>env</code> block when needed.
       </p>
       <div
@@ -831,89 +847,86 @@ const docs = [
           <caption class="sr-only">MSMCP 1.0.2 environment configuration variables</caption>
           <thead>
             <tr class="text-note uppercase tracking-wider text-ink-mute">
-              <th scope="col" class="py-2 pr-4 font-medium">Variable</th>
-              <th scope="col" class="py-2 pr-4 font-medium">Default</th>
-              <th scope="col" class="py-2 font-medium">Effect</th>
+              <th scope="col" class="py-2 pr-4 font-medium">
+                Variable
+              </th>
+              <th scope="col" class="py-2 pr-4 font-medium">
+                Default
+              </th>
+              <th scope="col" class="py-2 font-medium">
+                Effect
+              </th>
             </tr>
           </thead>
           <tbody>
-            {
-              envVars.map((v) => (
-                <tr class="border-t border-line-soft">
-                  <td class="py-2 pr-4 font-mono text-head whitespace-nowrap">{v.name}</td>
-                  <td class="py-2 pr-4 font-mono text-accent-ink whitespace-nowrap">
-                    {v.defaultVal}
-                  </td>
-                  <td class="py-2 text-ink-soft">{v.effect}</td>
-                </tr>
-              ))
-            }
+            {envVars.map((v) => (
+              <tr class="border-t border-line-soft">
+                <td class="py-2 pr-4 font-mono text-head whitespace-nowrap">{v.name}</td>
+                <td class="py-2 pr-4 font-mono text-accent-ink whitespace-nowrap">
+                  {v.defaultVal}
+                </td>
+                <td class="py-2 text-ink-soft">{v.effect}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
     </div>
   </section>
 
-  {
-    /* ===================================================================
+  {/* ===================================================================
       Tools
-      =================================================================== */
-  }
+      =================================================================== */}
   <section id="tools" class="shell scroll-mt-24 pb-16 md:pb-24">
     <h2 class="section-heading">15 tools, one question each.</h2>
     <p class="mt-4 max-w-3xl leading-relaxed text-ink-soft">
       Every call below matches the signature and defaults the server advertises in{" "}
       <code>tools/list</code>. When a spectrum is loaded with <code>load_spectrum</code>,{" "}
-      <code>summarise_reference</code>, <code>compute_cosine</code> and{" "}
-      <code>search_library</code> accept its <code>ptr:spectrum:…</code> handle instead of copying peaks
-      across MCP/JSON.
+      <code>summarise_reference</code>, <code>compute_cosine</code> and <code>search_library</code>{" "}
+      accept its <code>ptr:spectrum:…</code> handle instead of copying peaks across MCP/JSON.
     </p>
 
     <nav class="mt-6 flex flex-wrap gap-2" aria-label="Tool categories">
-      {
-        toolGuide.map((group) => (
-          <a
-            href={`#tools-${group.id}`}
-            class="chip transition-colors hover:border-accent hover:text-accent-ink"
-          >
-            {group.area}
-          </a>
-        ))
-      }
+      {toolGuide.map((group) => (
+        <a
+          href={`#tools-${group.id}`}
+          class="chip transition-colors hover:border-accent hover:text-accent-ink"
+        >
+          {group.area}
+        </a>
+      ))}
     </nav>
 
     <div class="mt-9 space-y-9">
-      {
-        toolGuide.map((group) => (
-          <section aria-labelledby={`tools-${group.id}`}>
-            <h3 id={`tools-${group.id}`} class="scroll-mt-24 text-small font-semibold text-head">
-              {group.area}
-            </h3>
-            <dl class="mt-3">
-              {group.tools.map((tool) => (
-                <div
-                  class="grid gap-1 border-t border-line-soft py-4 sm:grid-cols-[14rem_1fr] sm:gap-6"
-                  data-tool={tool.name}
-                >
-                  <dt class="min-w-0">
-                    <span class="block font-mono text-note font-medium text-head">{tool.name}</span>
-                    <span class="mt-1 block font-mono text-note text-ink-mute">
-                      {tool.mode} · {tool.output}
-                    </span>
-                  </dt>
-                  <dd class="min-w-0">
-                    <p class="text-small text-ink">{tool.ask}</p>
-                    <div class="mono-block mt-2 p-3 text-note whitespace-pre-wrap [overflow-wrap:anywhere]">
-                      <code>{tool.call}</code>
-                    </div>
-                    <p class="mt-2 text-note leading-relaxed text-ink-soft">{tool.returns}</p>
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-        ))
-      }
+      {toolGuide.map((group) => (
+        <section aria-labelledby={`tools-${group.id}`}>
+          <h3 id={`tools-${group.id}`} class="scroll-mt-24 text-small font-semibold text-head">
+            {group.area}
+          </h3>
+          <dl class="mt-3">
+            {group.tools.map((tool) => (
+              <div
+                class="grid gap-1 border-t border-line-soft py-4 sm:grid-cols-[14rem_1fr] sm:gap-6"
+                data-tool={tool.name}
+              >
+                <dt class="min-w-0">
+                  <span class="block font-mono text-note font-medium text-head">{tool.name}</span>
+                  <span class="mt-1 block font-mono text-note text-ink-mute">
+                    {tool.mode} · {tool.output}
+                  </span>
+                </dt>
+                <dd class="min-w-0">
+                  <p class="text-small text-ink">{tool.ask}</p>
+                  <div class="mono-block mt-2 p-3 text-note whitespace-pre-wrap [overflow-wrap:anywhere]">
+                    <code>{tool.call}</code>
+                  </div>
+                  <p class="mt-2 text-note leading-relaxed text-ink-soft">{tool.returns}</p>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ))}
     </div>
 
     <div class="card mt-8 p-5">
@@ -926,12 +939,8 @@ const docs = [
         </li>
         <li>
           <span class="font-mono text-ink">Annotations:</span> all 15 tools declare{" "}
-          <code>open_world_hint=False</code>. Thirteen are <code>read_only_hint=True</code>; only{
-            " "
-          }
-          <code>release_reference</code> and <code>cancel_search</code> mark state mutation (both{
-            " "
-          }
+          <code>open_world_hint=False</code>. Thirteen are <code>read_only_hint=True</code>; only{" "}
+          <code>release_reference</code> and <code>cancel_search</code> mark state mutation (both{" "}
           <code>idempotent_hint=True</code>).
         </li>
         <li>
@@ -942,16 +951,13 @@ const docs = [
         </li>
         <li>
           <span class="font-mono text-ink">Async execution:</span>
-          <code>search_library</code>{" "}
-          uses an in-memory job executor (4 concurrent jobs max, 1-hour finished-job TTL) polled via{
-            " "
-          }
-          <code>check_search_status</code>; MSMCP does not implement the MCP Tasks protocol, and
-          in-flight jobs do not survive a server restart.
+          <code>search_library</code> uses an in-memory job executor (4 concurrent jobs max, 1-hour
+          finished-job TTL) polled via <code>check_search_status</code>; MSMCP does not implement
+          the MCP Tasks protocol, and in-flight jobs do not survive a server restart.
         </li>
         <li>
-          <span class="font-mono text-ink">Failure modes:</span> boundary, format, and dependency failures
-          (<code>PathEscapeError</code>, <code>UnsupportedFormatError</code>,{" "}
+          <span class="font-mono text-ink">Failure modes:</span> boundary, format, and dependency
+          failures (<code>PathEscapeError</code>, <code>UnsupportedFormatError</code>,{" "}
           <code>MalformedFileError</code>, <code>MissingDependencyError</code>,{" "}
           <code>SpectrumCountExceededError</code>, <code>EmbeddingBackendUnavailable</code>) surface
           as MCP tool errors with diagnostic details in <code>stderr</code> logs.
@@ -960,11 +966,9 @@ const docs = [
     </div>
   </section>
 
-  {
-    /* ===================================================================
+  {/* ===================================================================
       Docs and links
-      =================================================================== */
-  }
+      =================================================================== */}
   <section id="docs" class="shell scroll-mt-24 pb-8">
     <h2 class="section-heading">Everything authoritative lives with the code.</h2>
     <p class="mt-4 max-w-3xl leading-relaxed text-ink-soft">
@@ -973,49 +977,47 @@ const docs = [
     </p>
 
     <ul class="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {
-        docs.map((d) => (
-          <li>
-            <a
-              class="card flex h-full flex-col gap-1 p-4 transition-colors hover:border-accent"
-              href={d.href}
-              target="_blank"
-              rel="noopener"
-            >
-              <span class="text-small font-semibold text-ink">{d.label}</span>
-              <span class="font-mono text-note text-ink-mute">{d.note} ↗</span>
-            </a>
-          </li>
-        ))
-      }
+      {docs.map((d) => (
+        <li>
+          <a
+            class="card flex h-full flex-col gap-1 p-4 transition-colors hover:border-accent"
+            href={d.href}
+            target="_blank"
+            rel="noopener"
+          >
+            <span class="text-small font-semibold text-ink">{d.label}</span>
+            <span class="font-mono text-note text-ink-mute">{d.note} ↗</span>
+          </a>
+        </li>
+      ))}
     </ul>
 
     <h3 class="mt-10 text-small font-semibold uppercase tracking-[0.14em] text-ink-mute">
       Reproducible examples
     </h3>
     <ul class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {
-        reproducibleExamples.map((example, index) => (
-          <li data-example={index + 1}>
-            <a
-              class="card flex h-full flex-col gap-2 p-4 transition-colors hover:border-accent"
-              href={example.href}
-              target="_blank"
-              rel="noopener"
-            >
-              <span class="text-small font-semibold text-ink">{example.title}</span>
-              <span class="text-note leading-relaxed text-ink-mute">{example.note}</span>
-            </a>
-          </li>
-        ))
-      }
+      {reproducibleExamples.map((example, index) => (
+        <li data-example={index + 1}>
+          <a
+            class="card flex h-full flex-col gap-2 p-4 transition-colors hover:border-accent"
+            href={example.href}
+            target="_blank"
+            rel="noopener"
+          >
+            <span class="text-small font-semibold text-ink">{example.title}</span>
+            <span class="text-note leading-relaxed text-ink-mute">{example.note}</span>
+          </a>
+        </li>
+      ))}
     </ul>
 
     <p class="mt-6 text-small text-ink-soft">
-      <span class="font-semibold text-ink">Contact.</span> There is no mailing list and no contact form.
-      Bug reports, questions and feature discussion belong in{" "}
-      <a class="prose-link" href={`${REPO}/issues`}>GitHub Issues</a>, where the answer stays
-      searchable for the next person.
+      <span class="font-semibold text-ink">Contact.</span> There is no mailing list and no contact
+      form. Bug reports, questions and feature discussion belong in{" "}
+      <a class="prose-link" href={`${REPO}/issues`}>
+        GitHub Issues
+      </a>
+      , where the answer stays searchable for the next person.
     </p>
   </section>
 </BaseLayout>
