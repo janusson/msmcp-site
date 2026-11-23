@@ -49,8 +49,32 @@ export const ENV_VARS = [
 
 export const MAJOR_SECTIONS = ["top", "example", "why", "get-started", "tools", "docs"];
 
-export const TRUSTED_EXTERNAL_HOSTS =
-  /^https:\/\/(github\.com\/janusson|docs\.astral\.sh|pypi\.org\/project\/msmcp|fonts\.googleapis\.com|fonts\.gstatic\.com)/;
+export const TRUSTED_EXTERNAL_PATHS = new Map([
+  ["github.com", "/janusson"],
+  ["pypi.org", "/project/msmcp"],
+  ["docs.astral.sh", "/"],
+  ["fonts.googleapis.com", "/"],
+  ["fonts.gstatic.com", "/"],
+]);
+
+export function isTrustedExternalUrl(href) {
+  let url;
+  try {
+    url = new URL(href);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:" || url.username || url.password || url.port) return false;
+
+  const allowedPath = TRUSTED_EXTERNAL_PATHS.get(url.hostname);
+  // Compare normalized paths at a segment boundary, never a raw URL prefix.
+  return (
+    allowedPath !== undefined &&
+    (allowedPath === "/" ||
+      url.pathname === allowedPath ||
+      url.pathname.startsWith(`${allowedPath}/`))
+  );
+}
 
 /** Parses JSON from the `<code>` element enclosing `marker`. */
 export function parseJsonCodeBlock(html, marker) {
@@ -329,11 +353,12 @@ export function analyzeHtml(html) {
     eventHandlerTags.slice(0, 3).join(", "),
   );
 
-  const external = [...html.matchAll(/<a\b[^>]*href="(https?:\/\/[^"]+)"[^>]*>/gi)].map((m) => ({
-    href: m[1],
-    tag: m[0],
-  }));
-  const insecure = external.filter((l) => l.href.startsWith("http://"));
+  const external = [...html.matchAll(/<(?:a|link)\b[^>]*\bhref="([^"]+)"[^>]*>/gi)]
+    // Canonical metadata has its own check; include font resource links here.
+    .filter((m) => /^<a\b/i.test(m[0]) || /\brel="(?:stylesheet|preconnect)"/i.test(m[0]))
+    .map((m) => ({ href: m[1], tag: m[0] }))
+    .filter((l) => /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(l.href.trim()));
+  const insecure = external.filter((l) => /^http:/i.test(l.href.trim()));
   check("no insecure http:// links", insecure.length === 0, insecure.map((l) => l.href).join(", "));
 
   const unrel = external.filter(
@@ -345,11 +370,13 @@ export function analyzeHtml(html) {
     unrel.map((l) => l.href).join(", "),
   );
 
-  const offRepo = external.filter((l) => !TRUSTED_EXTERNAL_HOSTS.test(l.href));
+  const offRepo = external.filter((l) => !isTrustedExternalUrl(l.href));
   check(
     "every external link points at a known-in-good-faith host",
     offRepo.length === 0,
-    offRepo.map((l) => l.href).join(", "),
+    offRepo.length
+      ? `expected credential-free HTTPS URLs on allowlisted hosts and path segments: ${offRepo.map((l) => l.href).join(", ")}`
+      : "",
   );
 
   // ---- keyboard access to scrollable regions -------------------------------

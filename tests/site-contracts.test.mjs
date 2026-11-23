@@ -126,6 +126,76 @@ describe("analyzeHtml security & contract regressions", () => {
     assert.deepEqual(failures, []);
   });
 
+  for (const href of [
+    "https://github.com/janusson",
+    "https://github.com/janusson/MSMCP/issues",
+    "https://github.com/janusson/MSMCP/blob/main/LICENSE#license",
+    "https://pypi.org/project/msmcp",
+    "https://pypi.org/project/msmcp/1.0.2/?source=site#files",
+    "https://docs.astral.sh",
+    "https://docs.astral.sh/uv/guides/",
+    "https://fonts.googleapis.com/css2?family=Inter&display=swap",
+    "https://fonts.gstatic.com/s/inter/v1/font.woff2",
+    "https://DOCS.ASTRAL.SH:443/uv/",
+  ]) {
+    it(`allows the intended external destination ${href}`, () => {
+      const html = buildValidHtmlFixture().replace(
+        "</body>",
+        `<a href="${href}" target="_blank" rel="noopener">Allowed</a></body>`,
+      );
+      assert.deepEqual(getFailureNames(html), []);
+    });
+  }
+
+  for (const href of [
+    "https://docs.astral.sh.evil.example/uv/",
+    "https://fonts.googleapis.com.evil.example/css2",
+    "https://fonts.gstatic.com.evil.example/font.woff2",
+    "https://github.com.evil.example/janusson/MSMCP",
+    "https://pypi.org.evil.example/project/msmcp/",
+    "https://github.com/janusson-elsewhere",
+    "https://github.com/janusson_elsewhere/MSMCP",
+    "https://github.com/elsewhere/MSMCP",
+    "https://pypi.org/project/msmcp-elsewhere/",
+    "https://pypi.org/project/another-package/",
+    "https://github.com/janusson%2Felsewhere",
+    "https://github.com/janusson/../elsewhere",
+    "https://pypi.org/project/msmcp/../another-package/",
+    "https://docs.astral.sh@evil.example/uv/",
+    "https://user:password@docs.astral.sh/uv/",
+    "https://user@github.com/janusson/MSMCP",
+    "http://docs.astral.sh/uv/",
+    "HTTP://github.com/janusson/MSMCP",
+    "ftp://docs.astral.sh/uv/",
+    "//docs.astral.sh/uv/",
+    "https://docs.astral.sh:8443/uv/",
+    "https://[invalid/",
+  ]) {
+    it(`rejects an untrusted external destination and identifies it: ${href}`, () => {
+      const html = buildValidHtmlFixture().replace(
+        "</body>",
+        `<a href="${href}" target="_blank" rel="noopener">Rejected</a></body>`,
+      );
+      const check = analyzeHtml(html).checks.find(
+        (c) => c.name === "every external link points at a known-in-good-faith host",
+      );
+      assert.equal(check.pass, false, `unexpectedly trusted ${href}`);
+      assert.ok(check.detail.includes(href), `diagnostic must identify ${href}`);
+    });
+  }
+
+  it("checks external font link destinations as well as anchors", () => {
+    const html = buildValidHtmlFixture().replace(
+      "https://fonts.googleapis.com/css2",
+      "https://fonts.googleapis.com.evil.example/css2",
+    );
+    const check = analyzeHtml(html).checks.find(
+      (c) => c.name === "every external link points at a known-in-good-faith host",
+    );
+    assert.equal(check.pass, false);
+    assert.ok(check.detail.includes("https://fonts.googleapis.com.evil.example/css2"));
+  });
+
   it("rejects duplicate ids and dead in-page anchors", () => {
     const html = buildValidHtmlFixture().replace(
       "<p>Glucose envelope:",
